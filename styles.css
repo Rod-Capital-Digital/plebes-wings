@@ -110,3 +110,8 @@ td,th{overflow-wrap:anywhere}
 .auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;color:#d7d4d0;font-size:9px;font-weight:800;letter-spacing:1.7px}.auth-brand img{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 8px 14px #0008)}
 .auth-card .eyebrow{margin-bottom:14px}.auth-card h1{font-size:clamp(30px,6vw,40px);margin-bottom:12px}.auth-copy{margin-bottom:25px;color:#b8b5b6;font-size:13px}.auth-form{display:grid;gap:15px}.auth-submit{width:100%;margin-top:2px}.auth-submit:disabled{cursor:wait;opacity:.7}.auth-message{min-height:18px;margin:0;color:#ffb2a9;font-size:12px;line-height:1.45}.auth-message:not([data-kind="error"]){color:#c9c7c3}.auth-note{margin:21px 0 0}.session-chip{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dfddd9;font-size:11px;font-weight:750}.sign-out{white-space:nowrap}
 @media (max-width:680px){.auth-gate{padding:14px}.auth-card{padding:27px 22px;border-radius:18px}.session-chip{display:none}.sign-out{min-height:38px}.top-right{gap:7px}}
+
+/* Plebes Wings: respetar los estados de visibilidad */
+[hidden] {
+  display: none !important;
+}
