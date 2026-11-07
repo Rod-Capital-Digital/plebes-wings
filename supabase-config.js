@@ -1,10 +1,11 @@
+
 /*
- * Configuración pública del navegador.
- * Reemplaza ambos valores con los datos de plebes-wings-prod.
- * La clave debe comenzar con sb_publishable_. Nunca agregues service_role,
- * claves secretas, contraseñas ni tokens administrativos a este archivo.
+ * Plebes Wings — Configuración Supabase
+ * Proyecto: plebes-wings-prod
+ * Solo contiene credenciales públicas.
  */
+
 window.PW_SUPABASE_CONFIG = Object.freeze({
-  url: '',
-  publishableKey: ''
+  url: 'https://rilrfcmmylldftioapnc.supabase.co',
+  publishableKey: 'sb_publishable_F9xrbta5SoNr4EKZKu8bPg_-e7C8VLH'
 });
