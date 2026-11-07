@@ -3,6 +3,7 @@
 // prototipo local funciona sin depender de una conexión externa.
 export const SUPABASE_JS_VERSION = '2.119.0';
 const SUPABASE_ESM_URL = `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@${SUPABASE_JS_VERSION}/+esm`;
+const EXPECTED_SUPABASE_URL = 'https://rilrfcmmylldftioapnc.supabase.co';
 
 let clientPromise = null;
 
@@ -15,7 +16,7 @@ function configuration() {
 
 export function getSupabaseConfigurationStatus() {
   const { url, publishableKey } = configuration();
-  const validUrl = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url);
+  const validUrl = url === EXPECTED_SUPABASE_URL;
   const validKey = publishableKey.startsWith('sb_publishable_');
   return { configured: validUrl && validKey, validUrl, validKey };
 }

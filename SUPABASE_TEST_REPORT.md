@@ -1,5 +1,21 @@
 # Reporte de pruebas y pendientes
 
+## Corrección de envío del inicio de sesión
+
+**Causa raíz:** el formulario `#auth-form` no declaraba `method` ni `action`. Si `app.js` no terminaba de cargar o no registraba su manejador, el navegador aplicaba su valor predeterminado: `GET` a la página actual, serializando `email` y `password` en la URL.
+
+Se cambió el respaldo HTML a `method="post" action="#auth-gate"` y se añadió una barrera inline, en fase de captura, que ejecuta `preventDefault()` antes de cargar `supabase-config.js`, `app.js` o cualquier dependencia. Si el módulo falla, la barrera muestra un mensaje y bloquea el envío nativo; no hay una ruta GET que pueda incorporar credenciales a la URL.
+
+Pruebas ejecutadas:
+
+- Simulación del evento `submit` con el módulo de la app ausente: el guardia de captura llamó a `preventDefault()` y mostró el estado de error.
+- Verificación estática del respaldo `POST` y del `action` seguro.
+- Verificación de sintaxis de `app.js` y `supabase-client.js`.
+- Configuración de otro proyecto Supabase simulada: el cliente la rechazó por no coincidir con la URL esperada de Plebes Wings.
+- Auditoría de llamadas: el inicio de sesión usa `supabase.auth.signInWithPassword()` y las tablas se consultan solo en modo lectura.
+
+La prueba con una cuenta válida y una cuenta inválida queda pendiente de credenciales de prueba autorizadas. Nunca se usaron ni se registraron contraseñas en esta revisión.
+
 ## Ejecutado localmente
 
 - `node --check` aprobó `app.js`, `supabase-client.js` y `supabase-config.js`.

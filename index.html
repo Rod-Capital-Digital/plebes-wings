@@ -21,13 +21,13 @@
       <p class="eyebrow">ACCESO SEGURO</p>
       <h1 id="auth-title">Inicia sesión para continuar</h1>
       <p class="auth-copy" id="auth-description">Verificaremos tu cuenta y los permisos asignados para esta operación.</p>
-      <form class="auth-form" id="auth-form" novalidate>
-        <div class="form-field"><label for="auth-email">Correo electrónico</label><input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="nombre@empresa.com"></div>
-        <div class="form-field"><label for="auth-password">Contraseña</label><input id="auth-password" name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña"></div>
+      <section class="auth-form" id="auth-form" role="group" aria-label="Inicio de sesión">
+        <div class="form-field"><label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" inputmode="email" autocomplete="email" required placeholder="nombre@empresa.com" aria-describedby="auth-message"></div>
+        <div class="form-field"><label for="auth-password">Contraseña</label><input id="auth-password" type="password" autocomplete="current-password" required placeholder="Tu contraseña" aria-describedby="auth-message"></div>
         <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
-        <button class="btn btn-primary auth-submit" id="auth-submit" type="submit">Iniciar sesión</button>
+        <button class="btn btn-primary auth-submit" id="auth-submit" type="button" disabled aria-disabled="true">Iniciar sesión</button>
         <button class="btn btn-ghost" id="auth-backup" type="button">Descargar respaldo local antes de continuar</button>
-      </form>
+      </section>
       <p class="caption auth-note">El acceso se concede según tu membresía activa y las políticas de seguridad de Plebes Wings.</p>
     </div>
   </section>
