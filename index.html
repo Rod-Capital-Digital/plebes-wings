@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101114">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Plebes Wings | Centro de operaciones, control de sucursales y ruta de profesionalización del negocio.">
+  <title>Plebes Wings | Centro de Operaciones</title>
+  <link rel="icon" href="assets/plebes-logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  <section class="auth-gate" id="auth-gate" aria-labelledby="auth-title" hidden>
+    <div class="auth-card">
+      <div class="auth-brand" aria-label="Plebes Wings">
+        <img src="assets/plebes-logo.png" alt="Logotipo Plebes Wings">
+        <span>CENTRO DE OPERACIONES</span>
+      </div>
+      <p class="eyebrow">ACCESO SEGURO</p>
+      <h1 id="auth-title">Inicia sesión para continuar</h1>
+      <p class="auth-copy" id="auth-description">Verificaremos tu cuenta y los permisos asignados para esta operación.</p>
+      <form class="auth-form" id="auth-form" novalidate>
+        <div class="form-field"><label for="auth-email">Correo electrónico</label><input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" required placeholder="nombre@empresa.com"></div>
+        <div class="form-field"><label for="auth-password">Contraseña</label><input id="auth-password" name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña"></div>
+        <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+        <button class="btn btn-primary auth-submit" id="auth-submit" type="submit">Iniciar sesión</button>
+        <button class="btn btn-ghost" id="auth-backup" type="button">Descargar respaldo local antes de continuar</button>
+      </form>
+      <p class="caption auth-note">El acceso se concede según tu membresía activa y las políticas de seguridad de Plebes Wings.</p>
+    </div>
+  </section>
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
+      <div class="brand" role="img" aria-label="Plebes Wings">
+        <span class="brand-icon" aria-hidden="true">🔥</span>
+        <span class="brand-text"><strong>PLEBES<span> WINGS</span></strong><small>CENTRO DE OPERACIONES</small></span>
+      </div>
+      <div class="sidebar-scroll">
+        <div class="nav-heading">CENTRO DE CONTROL</div>
+        <nav class="nav-list" id="nav-primary">
+          <a href="#inicio" class="nav-item active" data-page="inicio"><span data-icon="layout-dashboard"></span> Resumen general</a>
+          <a href="#ruta" class="nav-item" data-page="ruta"><span data-icon="route"></span> Ruta del proyecto</a>
+          <a href="#documentos" class="nav-item" data-page="documentos"><span data-icon="files"></span> Biblioteca de entregables</a>
+        </nav>
+        <div class="nav-heading">OPERACIÓN DIARIA</div>
+        <nav class="nav-list">
+          <a href="#ventas" class="nav-item" data-page="ventas"><span data-icon="shopping-bag"></span> Ventas y pedidos</a>
+          <a href="#abasto" class="nav-item" data-page="abasto"><span data-icon="truck"></span> Compras y entregas</a>
+          <a href="#inventario" class="nav-item" data-page="inventario"><span data-icon="package"></span> Inventario y mermas</a>
+          <a href="#caja" class="nav-item" data-page="caja"><span data-icon="wallet"></span> Corte de caja</a>
+          <a href="#finanzas" class="nav-item" data-page="finanzas"><span data-icon="chart"></span> Gastos y finanzas</a>
+        </nav>
+        <div class="nav-heading">ESTANDARIZACIÓN</div>
+        <nav class="nav-list">
+          <a href="#equipo" class="nav-item" data-page="equipo"><span data-icon="shield"></span> Personal y protocolos</a>
+          <a href="#ajustes" class="nav-item" data-page="ajustes"><span data-icon="settings"></span> Menú y configuración</a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="side-location"><span class="pulse"></span> <span>PILOTO · 14 JORNADAS</span></div>
+        <span class="side-note">La Mora · Santa Cruz, Toluca</span>
+        <span class="side-note">Operación: 19:00 – 23:00</span>
+      </div>
+    </aside>
+    <button class="backdrop" id="nav-backdrop" type="button" aria-label="Cerrar menú" hidden></button>
+    <div class="main-shell">
+      <header class="topbar">
+        <div class="top-left"><button class="icon-button mobile-toggle" id="menu-toggle" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+          <span class="breadcrumb">PLEBES WINGS <span>/</span> <strong id="breadcrumb-page">Resumen general</strong></span>
+        </div>
+        <div class="top-right">
+          <span class="local-tag" id="data-mode" title="Los datos operativos permanecen en este navegador"><span class="local-dot"></span> Versión local</span>
+          <span class="session-chip" id="session-chip" hidden></span>
+          <button class="mini-action sign-out" id="sign-out" type="button" hidden>Cerrar sesión</button>
+          <span class="top-avatar" title="Proyecto de consultoría">PW</span>
+        </div>
+      </header>
+      <main id="main-content" class="page-content" tabindex="-1" aria-live="polite"></main>
+      <footer class="footer"><span>© <span id="year"></span> Plebes Wings · Portal de transformación operativa</span><span>Prototipo piloto · La información ingresada no se sincroniza entre equipos.</span></footer>
+    </div>
+  </div>
+  <dialog class="modal" id="dialog"><div id="dialog-content"></div></dialog>
+  <div class="toast-zone" id="toast-zone" aria-live="polite"></div>
+  <input type="file" id="import-data" accept=".json,application/json" hidden>
+  <script src="supabase-config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
