@@ -104,7 +104,7 @@ td,th{overflow-wrap:anywhere}
   .btn{padding-inline:12px}
 }
 
-/* Supabase Auth gate: shown only when a valid public configuration exists. */
+/* Acceso cerrado hasta verificar sesión y membresía. */
 .auth-gate{min-height:100dvh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 80% 12%,#86251f55,transparent 30%),radial-gradient(circle at 18% 88%,#ffbc2218,transparent 32%),#0e0f11}
 .auth-card{width:min(100%,450px);padding:clamp(24px,5vw,42px);border:1px solid #4a3731;border-radius:22px;background:linear-gradient(145deg,#1e1c1e,#141518);box-shadow:0 26px 70px #000a}
 .auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;color:#d7d4d0;font-size:9px;font-weight:800;letter-spacing:1.7px}.auth-brand img{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 8px 14px #0008)}
@@ -115,3 +115,6 @@ td,th{overflow-wrap:anywhere}
 [hidden] {
   display: none !important;
 }
+
+.auth-progress{height:4px;border-radius:9px;background:#43342a;overflow:hidden;margin:22px 0}.auth-progress span{display:block;height:100%;width:40%;background:var(--yellow);animation:auth-progress 1.4s ease-in-out infinite alternate}@keyframes auth-progress{to{transform:translateX(150%)}}
+@media(prefers-reduced-motion:reduce){.auth-progress span{animation:none;width:100%}}

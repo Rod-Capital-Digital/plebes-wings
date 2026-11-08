@@ -1,0 +1,18 @@
+# Dependencias y archivos locales de herramientas
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# Secretos locales; supabase-config.js contiene configuración PÚBLICA necesaria
+.env
+.env.*
+!.env.example
+
+# Respaldos, exportaciones operativas y diagnósticos privados
+/plebes-wings-debug.zip
+/backups/
+/exports/
+/private-audit-results/

@@ -5,8 +5,8 @@ import vm from 'node:vm';
 
 function harness(){
   const elements=new Map();
-  const element=id=>{if(!elements.has(id))elements.set(id,{hidden:false,textContent:'',dataset:{},close(){},replaceChildren(){this.cleared=true}});return elements.get(id)};
-  const context=vm.createContext({console,structuredClone,localStorage:{getItem:()=>null},document:{getElementById:element},LOCAL_KEY:'test',setTimeout});
+  const element=id=>{if(!elements.has(id))elements.set(id,{hidden:false,textContent:'',dataset:{},setAttribute(){},close(){},replaceChildren(){this.cleared=true}});return elements.get(id)};
+  const context=vm.createContext({console,structuredClone,localStorage:{getItem:()=>null},document:{getElementById:element},LOCAL_KEY:'test',setTimeout,clearTimeout});
   const source=readFileSync(new URL('../app.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'').split("document.addEventListener('click'")[0];
   vm.runInContext(source+'\nglobalThis.api={validMember,authorizeUser,hydrateReadOnlyCatalog,authState,render,modal,save};',context);
   return {api:context.api,element};

@@ -1,6 +1,5 @@
-// Cliente de solo lectura/autenticación para un sitio estático.
-// La importación se retrasa hasta que exista configuración, por lo que el
-// prototipo local funciona sin depender de una conexión externa.
+// Cliente autenticado para catálogo de un sitio estático.
+// Sin configuración o conexión no se habilita acceso administrativo.
 export const SUPABASE_JS_VERSION = '2.119.0';
 const SUPABASE_ESM_URL = `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@${SUPABASE_JS_VERSION}/+esm`;
 const EXPECTED_SUPABASE_URL = 'https://rilrfcmmylldftioapnc.supabase.co';

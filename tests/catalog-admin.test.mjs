@@ -56,7 +56,7 @@ function createHarness({ unauthorized=false, writeError=null, noRow=false, delay
   };
   const ctx = vm.createContext({
     console: {error(){},warn(){},log(){}},
-    structuredClone, Date, Math, setTimeout,
+    structuredClone, Date, Math, setTimeout, clearTimeout,
     document, location:{hash:'#ajustes'}, history:{replaceState(){}},
     localStorage:{getItem:()=>null},
     FormData: class { constructor(formElement) { this.fields=formElement.fields; } get(key) { return this.fields.get(key)??null; } },
@@ -67,6 +67,7 @@ function createHarness({ unauthorized=false, writeError=null, noRow=false, delay
   ctx.__rendered = () => { rendered++; };
   ctx.__toast = (message,type) => { toasts.push({ message, type:type??'success' }); };
   const {api} = ctx;
+  api.authState.status = 'authenticated';
   api.authState.user = {id:'u1'};
   api.authState.member = {user_id:'u1', active:!unauthorized, role:'owner', branch_id:null};
   api.hydrateReadOnlyCatalog([{id:'b1',name:'Sucursal',location_description:'Ubicación',active:true}], records);
