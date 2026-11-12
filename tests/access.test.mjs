@@ -11,25 +11,19 @@ function harness(){
   vm.runInContext(source+'\nglobalThis.api={validMember,authorizeUser,hydrateReadOnlyCatalog,authState,render,modal,save};',context);
   return {api:context.api,element};
 }
-test('only active owners and consultants pass membership validation',()=>{
+test('only active authorized members pass membership validation',()=>{
   const {api}=harness();const user={id:'u'};
   for(const role of ['owner','consultant'])assert.equal(api.validMember({user_id:'u',active:true,role,branch_id:null},user),true);
-  for(const role of ['employee','admin',''])assert.equal(api.validMember({user_id:'u',active:true,role,branch_id:'mora'},user),false);
+  assert.equal(api.validMember({user_id:'u',active:true,role:'employee',branch_id:'mora'},user),true);
+  assert.equal(api.validMember({user_id:'u',active:true,role:'employee',branch_id:null},user),false);
+  for(const role of ['admin',''])assert.equal(api.validMember({user_id:'u',active:true,role,branch_id:'mora'},user),false);
   assert.equal(api.validMember({user_id:'u',active:false,role:'owner',branch_id:null},user),false);
   assert.equal(api.validMember({user_id:'other',active:true,role:'owner',branch_id:null},user),false);
 });
-test('employee denied before catalog requests',async()=>{
-  const {api,element}=harness();const tables=[];let signedOut=false;
-  api.authState.client={
-    auth:{signOut:async()=>{signedOut=true}},
-    from(table){
-      tables.push(table);
-      return {select(){return {eq(){return {maybeSingle:async()=>({data:{user_id:'u',active:true,role:'employee',branch_id:'mora'}})}}}}};
-    }
-  };
-  assert.equal(await api.authorizeUser({id:'u'}),false);
-  assert.deepEqual(tables,['pw_members']);assert.equal(signedOut,true);
-  assert.equal(element('app').hidden,true);
+test('employee requires an assigned branch while admins must not have one',()=>{
+  const {api}=harness(),user={id:'u'};
+  assert.equal(api.validMember({user_id:'u',active:true,role:'employee',branch_id:'santacruz'},user),true);
+  assert.equal(api.validMember({user_id:'u',active:true,role:'owner',branch_id:'santacruz'},user),false);
 });
 test('hash render without authentication keeps application gated; local writes disabled',()=>{
   const {api,element}=harness();api.render();assert.equal(element('app').hidden,true);

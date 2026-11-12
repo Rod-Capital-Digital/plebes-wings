@@ -1,0 +1,19 @@
+﻿ID,Categoría,Producto,Presentación,Precio MXN,Descripción
+ali,Pollo y más,Alitas,"Menú impreso indica ""075 g"": pendiente de confirmar",130,"Alitas en salsa al gusto, acompañadas de ensalada y papas. Gramaje por aclarar."
+bon,Pollo y más,Boneless,"Menú impreso indica ""075 g"": pendiente de confirmar",130,"Pechuga de pollo en trozos, salsa al gusto y papas. Gramaje por aclarar."
+pw_burger_sirloin_200,Hamburguesas,Hamburguesa Sirloin,200 g,130,"Carne sirloin 200 g; queso, piña, jitomate, lechuga y cebolla. Incluye papas."
+pw_burger_arrachera_200,Hamburguesas,Hamburguesa Arrachera,200 g,130,"Carne de arrachera 200 g; queso, piña, jitomate, lechuga y cebolla. Incluye papas."
+pw_burger_pollo_sencilla_120,Hamburguesas de pollo,Hamburguesa de pollo sencilla,120 g,80,"Pollo 120 g; jitomate, lechuga y cebolla. Incluye papas."
+pw_burger_pollo_doble_200,Hamburguesas de pollo,Hamburguesa de pollo doble,200 g,110,"Pollo 200 g; jitomate, lechuga y cebolla. Incluye papas."
+pw_burger_pollo_pepperoni_200,Hamburguesas de pollo,Hamburguesa de pollo especial Pepperoni,200 g,140,"Especial 200 g; jitomate, lechuga y pepperoni. Incluye papas."
+pw_burger_pollo_hawaiana_200,Hamburguesas de pollo,Hamburguesa de pollo especial Hawaiana,200 g,140,"Especial 200 g; jitomate, lechuga, piña y cebolla. Incluye papas."
+pw_hotdog_sencillo,Hot dogs,Hot dog sencillo,No indicado,60,"Jitomate, cebolla y chiles. Incluye papas."
+pw_hotdog_especial_120,Hot dogs,Hot dog especial,120 g,70,"Especial 120 g; tocino, jitomate, cebolla y chiles. Incluye papas."
+pw_nachos_200,Nachos,Nachos,200 g,100,Nachos 200 g con carne y aderezos. Incluye papas según menú.
+pw_papas_chicas_125,Papas,Papas a la francesa chicas,125 g,35,Porción de 125 g.
+pw_papas_medianas_200,Papas,Papas a la francesa medianas,200 g,60,Porción de 200 g.
+pw_papas_grandes_300,Papas,Papas a la francesa grandes,300 g,100,Porción de 300 g.
+pw_refresco,Bebidas,Refresco,No indicado,30,Presentación pendiente de confirmar.
+pw_bebida_sabor_500,Bebidas,Bebida de sabor medio litro,500 ml,25,500 ml. Sabor a elegir.
+pw_bebida_sabor_1000,Bebidas,Bebida de sabor un litro,"1,000 ml",50,"1,000 ml. Sabor a elegir."
+pw_jarra_agua_refill,Bebidas,Jarra de agua (refill),No indicado,100,Capacidad pendiente de confirmar.

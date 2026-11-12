@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {fetchOperations,catalogInsert,postInventory,cashSummary,openCashSession,closeCashSession,recordExpense} from '../operations-integration.js';
+const calls=[];const client={from:(table)=>({insert:(payload)=>({select:()=>({single:async()=>({data:{id:'test'},error:null})})}),select:()=>({eq:()=>({order:async()=>({data:[],error:null})}),order:()=>({limit:async()=>({data:[],error:null})}),then(resolve){resolve({data:[],error:null})}})}),rpc:async(name,args)=>{calls.push({name,args});return{data:{id:'ok'},error:null}}};
+test('Inventory posts through RPC, not direct table writes',async()=>{await postInventory(client,{location_id:'mora',item_id:'abc',quantity:-1,movement_type:'waste'});assert.equal(calls.at(-1).name,'pw_post_inventory_movement_v1');});
+test('Cash uses dedicated server procedures',async()=>{await cashSummary(client,'mora','2026-11-11');await openCashSession(client,{branch:'mora',date:'2026-11-11',float:100});await closeCashSession(client,{id:'abc',counted:100,withdrawals:0});assert.deepEqual(calls.slice(-3).map(x=>x.name),['pw_cash_summary_v1','pw_open_cash_session_v1','pw_close_cash_session_v1']);});
+test('Expenses use RPC',async()=>{await recordExpense(client,{date:'2026-11-11',branch:'mora',description:'Gas',category:'Gas',method:'efectivo',paidFromDrawer:true,amount:40});assert.equal(calls.at(-1).name,'pw_record_expense_v1');});
+test('Only allow two catalog inserts',async()=>{await assert.rejects(catalogInsert(client,'pw_sales',{}),/no autorizado/);});
+test('Explicitly reject unsupported movement type',async()=>{await assert.rejects(postInventory(client,{movement_type:'purchase',quantity:2}),/inválido/);});

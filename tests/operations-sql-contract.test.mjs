@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+const sql=n=>readFileSync(new URL(`../sql/${n}`,import.meta.url),'utf8');
+test('09 creates movement ledger, RLS and atomic purchase posting',()=>{const s=sql('09_INVENTORY_LEDGER.sql');for(const part of ['pw_inventory_transactions','pw_inventory_movements','ENABLE ROW LEVEL SECURITY','pw_post_inventory_movement_v1','pw_post_purchase_receipt_inventory','CREATE TRIGGER pw_purchase_received_inventory'])assert.ok(s.includes(part),part);});
+test('10 uses active sales and paid drawer expenses for cash reconciliations',()=>{const s=sql('10_CASH_SESSIONS.sql');for(const part of ['pw_cash_sessions','pw_cash_summary_v1','pw_open_cash_session_v1','pw_close_cash_session_v1',"s.status='active'",'paid_from_drawer=true'])assert.ok(s.includes(part),part);});
+test('11 expenses have server authorization and request idempotency',()=>{const s=sql('11_FINANCE_EXPENSES.sql');for(const part of ['pw_expense_request_keys','pw_record_expense_v1','private.pw_is_manager','pg_advisory_xact_lock'])assert.ok(s.includes(part),part);});
+test('12 creates transfer RPC using two signed ledger entries',()=>{const s=sql('12_STOCK_TRANSFERS.sql');assert.ok(s.includes('pw_transfer_stock_v1'));assert.ok(s.includes('-v_qty),(v_tx,v_dest,v_item,v_qty)'));});

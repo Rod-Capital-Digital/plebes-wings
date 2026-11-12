@@ -1,5 +1,14 @@
 # Plebes Wings — Centro de Operaciones
 
+## Revisión de integración · 10 de noviembre de 2026
+
+- **Biblioteca documental:** fichas PW-LEG-01, PW-LEG-02 y PW-OPS-03, con carga/consulta prevista mediante Supabase Storage privado y enlaces temporales. Los documentos originales DOCX **no están en este repositorio ni en el ZIP original**: deben cargarse con una sesión administrativa después de configurar y probar el bucket privado y RLS.
+- **Ventas y pedidos:** diagnóstico de lectura de `pw_sales` y `pw_sale_lines`; se añadió una vista previa de ticket sin registrar datos. La escritura real **sigue bloqueada** hasta verificar la estructura del proyecto y una transacción completa en servidor; ver `sales-integration.js` y `docs/CONTRATO_VENTAS_ATOMICAS.md`.
+- **No se aplicaron cambios** al proyecto de Supabase desde esta entrega; el conector disponible no concedió permisos al proyecto `plebes-wings-prod`.
+- Ver `docs/INTEGRACION_DOCUMENTAL_Y_VENTAS.md` y los SQL de inspección/propuesta en `sql/`. No ejecutar el SQL propuesto sin revisión del administrador.
+- Ejecutar `node --test tests/*.test.mjs` y abrir el sitio con Live Server antes de publicar.
+
+
 **Primera versión · Portal de consultoría y piloto de control operativo**
 
 Identidad visual basada en el logotipo entregado por Plebes Wings. Sitio en HTML, CSS y JavaScript sin dependencias externas. Diseñado para abrirse en computadora o celular y ser trabajado en Visual Studio Code / Codex.
@@ -86,3 +95,9 @@ plebes-wings-portal/
 Puedes pedir: “Revisa el proyecto Plebes Wings y conecta una base de datos Supabase nueva, con autenticación y políticas RLS por sucursal. Conserva la identidad visual y los módulos existentes. No publiques las recetas ni permitas acceso público a registros reales. Agrega migraciones, pruebas y un README de despliegue”.
 
 **No conectar todavía a una instancia Supabase ya usada en otro proyecto** sin establecer un entorno y respaldo específicos para Plebes Wings.
+
+## Actualización de ventas y documentos (10 de noviembre de 2026)
+
+Se verificó el esquema del proyecto correcto `plebes-wings-prod` y se aplicaron las migraciones documentadas en `sql/03_VENTAS_ATOMICAS_PLEBES.sql` y `sql/04_DOCUMENTOS_PRIVADOS_PLEBES.sql`. `Ventas y pedidos` dispone de RPC atómica para tickets con partidas y pagos y consulta de historial real; la captura requiere que el cliente compruebe la conexión autenticada al servidor. La Biblioteca de entregables dispone del bucket privado y tres fichas legales pendientes de revisión y carga de archivos originales. Consulta `docs/INTEGRACION_DOCUMENTAL_Y_VENTAS.md` para las pruebas y limitaciones actuales.
+
+La migración complementaria `sql/05_PRODUCTOS_ID_DEFAULT.sql` añade un valor predeterminado al identificador textual de productos para permitir el alta de nuevas presentaciones.

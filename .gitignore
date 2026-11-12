@@ -16,3 +16,10 @@ Thumbs.db
 /backups/
 /exports/
 /private-audit-results/
+
+# Expedientes internos, versiones por firmar y respuestas de auditorías
+/documentos-privados/
+/archivos-legales-originales/
+/diagnosticos-supabase-privados/
+PW_*.docx
+PW_*.pdf

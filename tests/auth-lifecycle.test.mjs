@@ -41,6 +41,7 @@ function harness(options={}){
     LOCAL_KEY:'local',localStorage:{getItem(){storageReads++;return options.raw??null}},
     getSupabaseConfigurationStatus:()=>({configured:options.configured!==false}),
     getSupabaseClient:async()=>{if(options.clientError)throw Error('CDN failed');return client},
+    LEGAL_DOCUMENTS:[], probeSalesTables:async()=>({salesReadable:true,linesReadable:true,serverReady:false}),
     document:{getElementById:element,querySelectorAll:()=>[],body:{classList:{toggle(){}}}},
     location:{hash:'#inicio'},history:{replaceState(){}},window:{matchMedia:()=>({matches:false})},
   });
@@ -71,6 +72,18 @@ test('restaura sesión válida sin mostrar login, autoriza y renderiza; una inic
   assert.equal(h.subscriptions,1);assert.equal(h.storageReads,1);
 });
 
+test('empleado válido solo muestra su vista, sin leer historial local administrativo',async()=>{
+  const h=harness({member:{user_id:'u',display_name:'Cajero',role:'employee',branch_id:'b',active:true},
+    raw:JSON.stringify({version:1,products:[],tasks:[],sales:[],docs:[{id:'confidencial'}]})});
+  await h.api.initializeAuth();
+  assert.equal(h.api.authState.status,'authenticated');
+  assert.equal(h.storageReads,0);
+  assert.equal(h.api.getData().docs.some(d=>d.id==='confidencial'),false);
+  assert.match(h.element('main-content').innerHTML,/Mi turno/);
+  assert.doesNotMatch(h.element('main-content').innerHTML,/Desempeño por sucursal|Avance del proyecto/);
+  assert.equal(h.api.authState.member.branch_id,'b');
+});
+
 test('ausencia de sesión e invalidación de Auth terminan en login sin consultas de catálogo',async()=>{
   for(const options of [{noSession:true},{authError:{name:'AuthSessionMissingError'}},{authError:{status:401}},{authError:{status:403}}]){
     const h=harness(options);await h.api.initializeAuth();
@@ -79,7 +92,7 @@ test('ausencia de sesión e invalidación de Auth terminan en login sin consulta
   }
 });
 
-test('membresía inactiva, empleado y usuario ajeno quedan denegados antes del catálogo',async()=>{
+test('membresía inactiva, empleado sin sucursal y usuario ajeno quedan denegados antes del catálogo',async()=>{
   for(const denied of [{...member,active:false},{...member,role:'employee'},{...member,user_id:'other'}]){
     const h=harness({member:denied});await h.api.initializeAuth();
     assert.equal(h.api.authState.status,'unauthorized');assert.equal(h.element('app').hidden,true);

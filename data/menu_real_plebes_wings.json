@@ -1,0 +1,203 @@
+{
+  "proyecto": "Plebes Wings",
+  "fecha_confirmacion": "2026-11-11",
+  "estado": "Precios confirmados por el cliente; gramajes ambiguos pendientes",
+  "productos": [
+    {
+      "id": "ali",
+      "nombre": "Alitas",
+      "unidad": "porción",
+      "precio_mxn": 130,
+      "categoria": "Pollo y más",
+      "porcion": "Menú impreso indica \"075 g\": pendiente de confirmar",
+      "descripcion": "Alitas en salsa al gusto, acompañadas de ensalada y papas. Gramaje por aclarar."
+    },
+    {
+      "id": "bon",
+      "nombre": "Boneless",
+      "unidad": "porción",
+      "precio_mxn": 130,
+      "categoria": "Pollo y más",
+      "porcion": "Menú impreso indica \"075 g\": pendiente de confirmar",
+      "descripcion": "Pechuga de pollo en trozos, salsa al gusto y papas. Gramaje por aclarar."
+    },
+    {
+      "id": "pw_burger_sirloin_200",
+      "nombre": "Hamburguesa Sirloin",
+      "unidad": "pieza",
+      "precio_mxn": 130,
+      "categoria": "Hamburguesas",
+      "porcion": "200 g",
+      "descripcion": "Carne sirloin 200 g; queso, piña, jitomate, lechuga y cebolla. Incluye papas."
+    },
+    {
+      "id": "pw_burger_arrachera_200",
+      "nombre": "Hamburguesa Arrachera",
+      "unidad": "pieza",
+      "precio_mxn": 130,
+      "categoria": "Hamburguesas",
+      "porcion": "200 g",
+      "descripcion": "Carne de arrachera 200 g; queso, piña, jitomate, lechuga y cebolla. Incluye papas."
+    },
+    {
+      "id": "pw_burger_pollo_sencilla_120",
+      "nombre": "Hamburguesa de pollo sencilla",
+      "unidad": "pieza",
+      "precio_mxn": 80,
+      "categoria": "Hamburguesas de pollo",
+      "porcion": "120 g",
+      "descripcion": "Pollo 120 g; jitomate, lechuga y cebolla. Incluye papas."
+    },
+    {
+      "id": "pw_burger_pollo_doble_200",
+      "nombre": "Hamburguesa de pollo doble",
+      "unidad": "pieza",
+      "precio_mxn": 110,
+      "categoria": "Hamburguesas de pollo",
+      "porcion": "200 g",
+      "descripcion": "Pollo 200 g; jitomate, lechuga y cebolla. Incluye papas."
+    },
+    {
+      "id": "pw_burger_pollo_pepperoni_200",
+      "nombre": "Hamburguesa de pollo especial Pepperoni",
+      "unidad": "pieza",
+      "precio_mxn": 140,
+      "categoria": "Hamburguesas de pollo",
+      "porcion": "200 g",
+      "descripcion": "Especial 200 g; jitomate, lechuga y pepperoni. Incluye papas."
+    },
+    {
+      "id": "pw_burger_pollo_hawaiana_200",
+      "nombre": "Hamburguesa de pollo especial Hawaiana",
+      "unidad": "pieza",
+      "precio_mxn": 140,
+      "categoria": "Hamburguesas de pollo",
+      "porcion": "200 g",
+      "descripcion": "Especial 200 g; jitomate, lechuga, piña y cebolla. Incluye papas."
+    },
+    {
+      "id": "pw_hotdog_sencillo",
+      "nombre": "Hot dog sencillo",
+      "unidad": "pieza",
+      "precio_mxn": 60,
+      "categoria": "Hot dogs",
+      "porcion": "No indicado",
+      "descripcion": "Jitomate, cebolla y chiles. Incluye papas."
+    },
+    {
+      "id": "pw_hotdog_especial_120",
+      "nombre": "Hot dog especial",
+      "unidad": "pieza",
+      "precio_mxn": 70,
+      "categoria": "Hot dogs",
+      "porcion": "120 g",
+      "descripcion": "Especial 120 g; tocino, jitomate, cebolla y chiles. Incluye papas."
+    },
+    {
+      "id": "pw_nachos_200",
+      "nombre": "Nachos",
+      "unidad": "porción",
+      "precio_mxn": 100,
+      "categoria": "Nachos",
+      "porcion": "200 g",
+      "descripcion": "Nachos 200 g con carne y aderezos. Incluye papas según menú."
+    },
+    {
+      "id": "pw_papas_chicas_125",
+      "nombre": "Papas a la francesa chicas",
+      "unidad": "porción",
+      "precio_mxn": 35,
+      "categoria": "Papas",
+      "porcion": "125 g",
+      "descripcion": "Porción de 125 g."
+    },
+    {
+      "id": "pw_papas_medianas_200",
+      "nombre": "Papas a la francesa medianas",
+      "unidad": "porción",
+      "precio_mxn": 60,
+      "categoria": "Papas",
+      "porcion": "200 g",
+      "descripcion": "Porción de 200 g."
+    },
+    {
+      "id": "pw_papas_grandes_300",
+      "nombre": "Papas a la francesa grandes",
+      "unidad": "porción",
+      "precio_mxn": 100,
+      "categoria": "Papas",
+      "porcion": "300 g",
+      "descripcion": "Porción de 300 g."
+    },
+    {
+      "id": "pw_refresco",
+      "nombre": "Refresco",
+      "unidad": "unidad",
+      "precio_mxn": 30,
+      "categoria": "Bebidas",
+      "porcion": "No indicado",
+      "descripcion": "Presentación pendiente de confirmar."
+    },
+    {
+      "id": "pw_bebida_sabor_500",
+      "nombre": "Bebida de sabor medio litro",
+      "unidad": "vaso",
+      "precio_mxn": 25,
+      "categoria": "Bebidas",
+      "porcion": "500 ml",
+      "descripcion": "500 ml. Sabor a elegir."
+    },
+    {
+      "id": "pw_bebida_sabor_1000",
+      "nombre": "Bebida de sabor un litro",
+      "unidad": "vaso",
+      "precio_mxn": 50,
+      "categoria": "Bebidas",
+      "porcion": "1,000 ml",
+      "descripcion": "1,000 ml. Sabor a elegir."
+    },
+    {
+      "id": "pw_jarra_agua_refill",
+      "nombre": "Jarra de agua (refill)",
+      "unidad": "jarra",
+      "precio_mxn": 100,
+      "categoria": "Bebidas",
+      "porcion": "No indicado",
+      "descripcion": "Capacidad pendiente de confirmar."
+    }
+  ],
+  "inactivos_conservados": [
+    {
+      "id": "ham",
+      "nombre": "Hamburguesas"
+    },
+    {
+      "id": "pap",
+      "nombre": "Papas a la francesa"
+    }
+  ],
+  "salsas_incluidas_sin_precio_adicional_confirmado": [
+    "Mango Habanero",
+    "Tamarindo Habanero",
+    "Fresa Habanero",
+    "Frambuesa Habanero",
+    "Jalapeño",
+    "Búfalo",
+    "Ketchup",
+    "Ranch",
+    "Barbecue"
+  ],
+  "condimentos_para_papas_sin_precio_indicado": [
+    "Takis rojos",
+    "Takis azules",
+    "Flaminhot",
+    "Doritos nachos",
+    "Doritos negros",
+    "Chetos",
+    "Chester",
+    "Habanero limón",
+    "Ruffles",
+    "Queso parmesano"
+  ],
+  "advertencia": "No registra costos, stock ni recetas; no emitir partidas adicionales por salsa o polvo hasta acordar operación."
+}

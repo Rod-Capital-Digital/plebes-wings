@@ -1,0 +1,25 @@
+PLEBES WINGS V2 · CONEXIÓN REAL AL SERVIDOR · 10/11/2026
+
+IMPORTANTE: La base de datos del proyecto plebes-wings-prod YA fue actualizada.
+No ejecutes de nuevo los SQL 03 y 04 sin revisar primero el historial de migraciones.
+
+1. Dentro del repositorio de la oficina, cambia a feat/ventas-supabase y guarda respaldo.
+2. Extrae el parche de esta entrega en la raíz, conservando las subcarpetas tests, docs y sql.
+3. Comprueba:
+   node --check app.js
+   node --check sales-integration.js
+   node --check private-documents.js
+   node --test tests/*.test.mjs
+   git diff --check
+   git status
+4. Usa Live Server y entra con una membresía activa owner/consultant.
+5. Verifica «Ventas y pedidos». La captura depende de la comprobación real de permisos/RPC.
+   NO hagas una venta de prueba sin definir antes productos con precios reales y acordar la prueba.
+6. En Biblioteca de entregables, sube los tres DOCX originales mediante «Cargar versión».
+   No están incluidos en el ZIP. Completa los campos legales y revisa los textos antes de firmar.
+7. Revisa todos los cambios antes de commit. No se hizo push ni despliegue a GitHub Pages.
+
+SQL aplicado en servidor: migraciones plebes_ventas_atomicas_idempotentes_v1
+ y plebes_documentos_privados_y_fichas_v1.
+El portal original no puede guardar ventas hasta incorporar estos archivos nuevos.
+Actualización adicional aplicada: plebes_product_id_default_for_catalog_v1.
