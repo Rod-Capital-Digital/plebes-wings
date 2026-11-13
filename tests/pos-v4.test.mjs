@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 import {POS_PRODUCT_IMAGES,adjustCartQuantity,buildSaleDraft,cartSummary,visualCatalog} from '../sales-integration.js';
 
 const UUID='123e4567-e89b-42d3-a456-426614174000';
@@ -13,13 +13,42 @@ const products=[
 
 test('POS visual asigna imágenes por identificador estable y no por nombre',()=>{
   assert.deepEqual(POS_PRODUCT_IMAGES,{
-    ali:'assets/productos/alitas.webp',bon:'assets/productos/boneless.webp',
+    ali:'assets/productos/pw-alitas.webp',bon:'assets/productos/pw-boneless.webp',
+    pw_burger_sirloin_200:'assets/productos/hamburguesa-sirloin.webp',
+    pw_burger_arrachera_200:'assets/productos/hamburguesa-arrachera.webp',
+    pw_burger_pollo_sencilla_120:'assets/productos/hamburguesa-pollo-sencilla.webp',
+    pw_burger_pollo_doble_200:'assets/productos/hamburguesa-pollo-doble.webp',
+    pw_burger_pollo_pepperoni_200:'assets/productos/hamburguesa-pollo-pepperoni.webp',
+    pw_burger_pollo_hawaiana_200:'assets/productos/hamburguesa-pollo-hawaiana.webp',
+    pw_hotdog_sencillo:'assets/productos/hot-dog-sencillo.webp',
+    pw_hotdog_especial_120:'assets/productos/hot-dog-especial.webp',
     ham:'assets/productos/hamburguesa.webp',pap:'assets/productos/papas.webp'
   });
   const catalog=visualCatalog(products);
   assert.equal(catalog.find(p=>p.id==='ali').image,POS_PRODUCT_IMAGES.ali);
   assert.equal(catalog.find(p=>p.id==='ham').purchasable,false);
   assert.equal(catalog.find(p=>p.id==='pap').purchasable,true);
+  assert.equal(visualCatalog([{id:'pw_burger_futura',name:'Hamburguesa futura',price:100,active:true}])[0].image,null);
+});
+
+test('las diez imágenes nuevas resuelven únicamente por ID y existen en assets locales',()=>{
+  const expected={
+    ali:'assets/productos/pw-alitas.webp',
+    bon:'assets/productos/pw-boneless.webp',
+    pw_burger_sirloin_200:'assets/productos/hamburguesa-sirloin.webp',
+    pw_burger_arrachera_200:'assets/productos/hamburguesa-arrachera.webp',
+    pw_burger_pollo_sencilla_120:'assets/productos/hamburguesa-pollo-sencilla.webp',
+    pw_burger_pollo_doble_200:'assets/productos/hamburguesa-pollo-doble.webp',
+    pw_burger_pollo_pepperoni_200:'assets/productos/hamburguesa-pollo-pepperoni.webp',
+    pw_burger_pollo_hawaiana_200:'assets/productos/hamburguesa-pollo-hawaiana.webp',
+    pw_hotdog_sencillo:'assets/productos/hot-dog-sencillo.webp',
+    pw_hotdog_especial_120:'assets/productos/hot-dog-especial.webp'
+  };
+  assert.deepEqual(Object.fromEntries(Object.keys(expected).map(id=>[id,POS_PRODUCT_IMAGES[id]])),expected);
+  for(const path of Object.values(expected)){
+    assert.match(path,/^(?!\/|[A-Za-z]:|https?:)/,'la ruta debe ser relativa');
+    assert.ok(existsSync(new URL(`../${path}`,import.meta.url)));
+  }
 });
 
 test('carrito conserva cantidades enteras, permite retirar y bloquea productos sin precio',()=>{
@@ -46,6 +75,7 @@ test('total visual usa centavos y el borrador conserva el contrato de la RPC',()
 
 test('POS de página completa conserva el borrador y registra únicamente por RPC',()=>{
   const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
   assert.match(app,/TOTAL ESTIMADO/);
   assert.match(app,/BORRADOR \/ NO REGISTRA VENTA NI COBRO/);
@@ -54,6 +84,10 @@ test('POS de página completa conserva el borrador y registra únicamente por RP
   assert.match(app,/window\.confirm\(`Confirmar cobro/);
   assert.match(app,/registerSale\(authState\.client,draft,\{approved:true\}\)/);
   assert.match(app,/data-pos-delta/);
+  assert.match(app,/loading="lazy" decoding="async"/);
+  assert.match(app,/pos-product-placeholder/);
+  assert.match(app,/\.pos-product-image img/);
+  assert.match(css,/object-fit:contain/);
   assert.match(app,/frame\.contentWindow\.print\(\)/);
   assert.doesNotMatch(app,/window\.print\(\)/);
   assert.match(html,/id="print-frame"/);

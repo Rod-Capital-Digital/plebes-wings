@@ -12,7 +12,7 @@ test('Menú oficial: 18 presentaciones distintas con precio positivo',()=>{
 });
 test('POS muestra categorías nuevas con imágenes y filtra inactivos',()=>{
  const catalog=visualCatalog(manifest.productos.map(p=>({id:p.id,name:p.nombre,price:p.precio_mxn,active:true})));
- assert.equal(catalog.find(p=>p.id==='pw_burger_sirloin_200').image,'assets/productos/hamburguesa.webp');
+ assert.equal(catalog.find(p=>p.id==='pw_burger_sirloin_200').image,'assets/productos/hamburguesa-sirloin.webp');
  assert.equal(catalog.find(p=>p.id==='pw_papas_chicas_125').image,'assets/productos/papas.webp');
  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
  assert.ok((app.match(/visualCatalog\(data\.products\.filter\(p=>p\.active!==false\)\)/g)||[]).length>=3);

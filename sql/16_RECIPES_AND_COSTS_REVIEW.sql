@@ -1,0 +1,20 @@
+-- REVIEW-ONLY. Requires 07/09; do not apply to production.
+BEGIN;
+ALTER TABLE public.pw_inventory_items ADD COLUMN IF NOT EXISTS purchase_presentation text, ADD COLUMN IF NOT EXISTS conversion_factor numeric(14,6), ADD COLUMN IF NOT EXISTS minimum_stock numeric(14,3), ADD COLUMN IF NOT EXISTS preferred_supplier_id uuid REFERENCES public.pw_suppliers(id) ON DELETE RESTRICT;
+DO $check$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='pw_inventory_items_conversion_factor_check') THEN ALTER TABLE public.pw_inventory_items ADD CONSTRAINT pw_inventory_items_conversion_factor_check CHECK (conversion_factor IS NULL OR conversion_factor>0); END IF; END $check$;
+CREATE TABLE IF NOT EXISTS public.pw_inventory_item_costs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),item_id uuid NOT NULL REFERENCES public.pw_inventory_items(id) ON DELETE RESTRICT,cost_per_base_unit numeric(14,4) NOT NULL CHECK(cost_per_base_unit>=0),effective_on date NOT NULL,source_purchase_id uuid REFERENCES public.pw_purchase_documents(id) ON DELETE RESTRICT,created_by uuid NOT NULL REFERENCES auth.users(id),created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS public.pw_recipe_versions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),product_id text NOT NULL REFERENCES public.pw_products(id) ON DELETE RESTRICT,name text NOT NULL,version_no integer NOT NULL,valid_from date NOT NULL DEFAULT current_date,yield_units numeric(14,3) NOT NULL DEFAULT 1 CHECK(yield_units>0),waste_percent numeric(5,2) NOT NULL DEFAULT 0 CHECK(waste_percent>=0 AND waste_percent<100),status text NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','complete','active','retired')),created_by uuid NOT NULL REFERENCES auth.users(id),created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(product_id,version_no));
+CREATE TABLE IF NOT EXISTS public.pw_recipe_lines (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),recipe_version_id uuid NOT NULL REFERENCES public.pw_recipe_versions(id) ON DELETE RESTRICT,item_id uuid NOT NULL REFERENCES public.pw_inventory_items(id) ON DELETE RESTRICT,quantity numeric(14,3) NOT NULL CHECK(quantity>0),unit text NOT NULL,UNIQUE(recipe_version_id,item_id));
+CREATE TABLE IF NOT EXISTS public.pw_sale_recipe_consumptions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),sale_id uuid NOT NULL REFERENCES public.pw_sales(id) ON DELETE RESTRICT,recipe_version_id uuid NOT NULL REFERENCES public.pw_recipe_versions(id) ON DELETE RESTRICT,inventory_transaction_id uuid UNIQUE REFERENCES public.pw_inventory_transactions(id) ON DELETE RESTRICT,request_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL DEFAULT now());
+-- Un producto sólo puede tener una receta activa a la vez; el histórico es inmutable
+-- para los roles de aplicación (no hay API de escritura en esta migración).
+CREATE UNIQUE INDEX IF NOT EXISTS pw_recipe_versions_one_active_product_idx
+ ON public.pw_recipe_versions(product_id) WHERE status='active';
+ALTER TABLE public.pw_inventory_item_costs ENABLE ROW LEVEL SECURITY;ALTER TABLE public.pw_recipe_versions ENABLE ROW LEVEL SECURITY;ALTER TABLE public.pw_recipe_lines ENABLE ROW LEVEL SECURITY;ALTER TABLE public.pw_sale_recipe_consumptions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.pw_inventory_item_costs,public.pw_recipe_versions,public.pw_recipe_lines,public.pw_sale_recipe_consumptions FROM PUBLIC,anon,authenticated;GRANT SELECT ON public.pw_recipe_versions,public.pw_recipe_lines TO authenticated;
+CREATE POLICY pw_recipe_versions_read ON public.pw_recipe_versions FOR SELECT TO authenticated USING ((SELECT private.pw_is_manager()));
+CREATE POLICY pw_recipe_lines_read ON public.pw_recipe_lines FOR SELECT TO authenticated USING (EXISTS(SELECT 1 FROM public.pw_recipe_versions r WHERE r.id=recipe_version_id));
+-- Consumption is deliberately not wired into pw_register_sale_v2. A future reviewed RPC
+-- must lock the sale, pin this immutable recipe version, post a branch-scoped ledger transaction,
+-- and write one request_id before enabling automatic deductions.
+COMMIT;

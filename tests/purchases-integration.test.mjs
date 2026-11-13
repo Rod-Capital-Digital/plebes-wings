@@ -51,3 +51,18 @@ test('probe no confunde denegación de permisos ni RPC ausente con una verificac
   await assert.rejects(probePurchaseModule(clientFor('function public.pw_create_purchase_draft_v1 does not exist')),/no está disponible/);
   await assert.rejects(probePurchaseModule(clientFor('Fallo inesperado del servidor')),/Fallo inesperado/);
 });
+
+test('purchase draft rejects impossible calendar dates and accepts precise currency cents',()=>{
+  assert.throws(()=>buildPurchaseDraft({request_id:requestId,supplier_id:supplierId,purchase_date:'2026-02-31',payment_method:'efectivo',destination_location_id:'central',lines:[{item_id:itemId,unit:'kg',quantity:1,unit_cost:0.29}]},catalog),/fecha/);
+  const draft=buildPurchaseDraft({request_id:requestId,supplier_id:supplierId,purchase_date:'2026-11-12',payment_method:'efectivo',destination_location_id:'central',lines:[{item_id:itemId,unit:'kg',quantity:1,unit_cost:0.29}]},catalog);
+  assert.equal(draft.lines[0].unit_cost,0.29);
+});
+
+test('una compra con costo vacío no fabrica un costo cero',()=>{
+ const base={request_id:requestId,supplier_id:supplierId,purchase_date:'2026-11-12',payment_method:'efectivo',destination_location_id:'central'};
+ for(const unit_cost of ['',null,undefined]){
+  assert.throws(()=>buildPurchaseDraft({...base,lines:[{item_id:itemId,unit:'kg',quantity:1,unit_cost}]},catalog),/costo unitario/);
+ }
+ const explicit=buildPurchaseDraft({...base,lines:[{item_id:itemId,unit:'kg',quantity:1,unit_cost:0}]},catalog);
+ assert.equal(explicit.lines[0].unit_cost,0);
+});

@@ -3,8 +3,17 @@ export const SALES_WRITE_ENABLED = true; // RPC verificada en plebes-wings-prod;
 export const SALES_RPC_NAME = 'pw_register_sale_v2'; // Ruta transaccional para owner, consultant y employee, validada en PostgreSQL.
 export const VOID_SALE_RPC_NAME = 'pw_void_sale_v1';
 export const POS_PRODUCT_IMAGES = Object.freeze({
-  ali:'assets/productos/alitas.webp',
-  bon:'assets/productos/boneless.webp',
+  // Rutas estáticas por ID de pw_products; nunca se infieren a partir del nombre.
+  ali:'assets/productos/pw-alitas.webp',
+  bon:'assets/productos/pw-boneless.webp',
+  pw_burger_sirloin_200:'assets/productos/hamburguesa-sirloin.webp',
+  pw_burger_arrachera_200:'assets/productos/hamburguesa-arrachera.webp',
+  pw_burger_pollo_sencilla_120:'assets/productos/hamburguesa-pollo-sencilla.webp',
+  pw_burger_pollo_doble_200:'assets/productos/hamburguesa-pollo-doble.webp',
+  pw_burger_pollo_pepperoni_200:'assets/productos/hamburguesa-pollo-pepperoni.webp',
+  pw_burger_pollo_hawaiana_200:'assets/productos/hamburguesa-pollo-hawaiana.webp',
+  pw_hotdog_sencillo:'assets/productos/hot-dog-sencillo.webp',
+  pw_hotdog_especial_120:'assets/productos/hot-dog-especial.webp',
   ham:'assets/productos/hamburguesa.webp',
   pap:'assets/productos/papas.webp'
 });
@@ -17,8 +26,7 @@ export function visualCatalog(products){
     const price=Number(product?.price);
     const purchasable=product?.active!==false&&Number.isFinite(price)&&price>0;
     const id=String(product?.id||'');
-    const fallbackImage=id.startsWith('pw_burger_')?'assets/productos/hamburguesa.webp'
-      :id.startsWith('pw_papas_')?'assets/productos/papas.webp':null;
+    const fallbackImage=id.startsWith('pw_papas_')?'assets/productos/papas.webp':null;
     return {...product,price,purchasable,image:POS_PRODUCT_IMAGES[id]||fallbackImage};
   });
 }

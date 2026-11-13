@@ -1,3 +1,5 @@
+> **Entrega revisada — 12 de noviembre de 2026:** consulta primero [`ENTREGA_REVISADA_2026-11-12.md`](ENTREGA_REVISADA_2026-11-12.md) y [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) para distinguir código local validado de migraciones aún no desplegadas. Este ZIP no incluye `.git` y no cambia Supabase por sí solo.
+
 # Plebes Wings — Centro de Operaciones
 
 ## Revisión de integración · 10 de noviembre de 2026
@@ -101,3 +103,8 @@ Puedes pedir: “Revisa el proyecto Plebes Wings y conecta una base de datos Sup
 Se verificó el esquema del proyecto correcto `plebes-wings-prod` y se aplicaron las migraciones documentadas en `sql/03_VENTAS_ATOMICAS_PLEBES.sql` y `sql/04_DOCUMENTOS_PRIVADOS_PLEBES.sql`. `Ventas y pedidos` dispone de RPC atómica para tickets con partidas y pagos y consulta de historial real; la captura requiere que el cliente compruebe la conexión autenticada al servidor. La Biblioteca de entregables dispone del bucket privado y tres fichas legales pendientes de revisión y carga de archivos originales. Consulta `docs/INTEGRACION_DOCUMENTAL_Y_VENTAS.md` para las pruebas y limitaciones actuales.
 
 La migración complementaria `sql/05_PRODUCTOS_ID_DEFAULT.sql` añade un valor predeterminado al identificador textual de productos para permitir el alta de nuevas presentaciones.
+
+
+## Auditoría y puesta en operación (12/11/2026)
+
+Antes de migrar tablas 14–17, consulta **`PLAN_PUESTA_OPERACION_V2.md`** y el encabezado vigente de **`IMPLEMENTATION_STATUS.md`**. Incluyen secuencia de pruebas aisladas, autorización por rol, pendientes de concurrencia y recuperación. Las migraciones 14–17 **no están desplegadas**, y la suite JS no sustituye las pruebas PostgreSQL. La cuenta `owner` activa continúa pendiente de alta mediante procedimiento autorizado.

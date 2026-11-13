@@ -1,0 +1,25 @@
+PLEBES WINGS V2 - CAMBIOS SOBRE EL ZIP SUBIDO
+Fecha: 2026-11-12
+Nota: no contiene .git, ni modifica Supabase/GitHub de forma remota.
+
+ARCHIVOS MODIFICADOS
+- IMPLEMENTATION_STATUS.md
+- README.md
+- app.js
+- purchases-integration.js
+- recipes-integration.js
+- sql/15_BRANCH_DELIVERY_RECEIPTS_REVIEW.sql
+- sql/17_PARTIAL_PURCHASE_RECEIPTS_REVIEW.sql
+- tests/purchases-integration.test.mjs
+- tests/recipes-integration.test.mjs
+
+ARCHIVOS NUEVOS
+- ENTREGA_REVISADA_2026-11-12.md
+- finance-metrics.js
+- pos-draft.js
+- tests/finance-metrics.test.mjs
+- tests/pos-draft-persistence.test.mjs
+- tests/sql-review-regressions.test.mjs
+- tests/static-flow-regressions.test.mjs
+
+Archivos originales excluidos: .git/ (historial local del usuario).
