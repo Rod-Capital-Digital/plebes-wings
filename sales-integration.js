@@ -1,6 +1,6 @@
 /* POS: el servidor crea tickets mediante una única RPC transaccional e idempotente. */
 export const SALES_WRITE_ENABLED = true; // RPC verificada en plebes-wings-prod; la UI exige confirmar la disponibilidad de la sesión.
-export const SALES_RPC_NAME = 'pw_register_sale_v2'; // Ruta transaccional para owner, consultant y employee, validada en PostgreSQL.
+export const SALES_RPC_NAME = 'pw_register_sale_v3'; // Venta y consumo de receta se confirman en la misma transacción atómica.
 export const VOID_SALE_RPC_NAME = 'pw_void_sale_v1';
 export const POS_PRODUCT_IMAGES = Object.freeze({
   // Rutas estáticas por ID de pw_products; nunca se infieren a partir del nombre.

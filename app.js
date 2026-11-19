@@ -5,7 +5,7 @@ import { sumReceivedPurchases } from './finance-metrics.js';
 import { getSupabaseClient, getSupabaseConfigurationStatus } from './supabase-client.js';
 import { LEGAL_DOCUMENTS, findLegalDocument, listLegalVersions, signLegalDocument, uploadLegalDocument } from './private-documents.js';
 import { adjustCartQuantity, buildSaleDraft, cartSummary, probeSalesTables, registerSale, visualCatalog, voidSale, SALES_WRITE_ENABLED } from './sales-integration.js';
-import {fetchOperations,catalogInsert,catalogUpdate,deleteCatalogRecord,updateProjectTask,postInventory,cashSummary,openCashSession,closeCashSession,recordExpense,transferStock,probeBranchDeliveryModule,operationId} from './operations-integration.js';
+import {fetchOperations,catalogInsert,catalogUpdate,deleteCatalogRecord,deleteInventoryTestTransaction,deleteBranchDeliveryTest,updateProjectTask,postInventory,cashSummary,openCashSession,closeCashSession,recordExpense,transferStock,probeBranchDeliveryModule,operationId} from './operations-integration.js';
 import {INVENTORY_ITEM_TEMPLATES,INVENTORY_ITEM_TYPES,INVENTORY_UNITS} from './inventory-catalog.js';
 import {runInventorySimulationScenario} from './inventory-simulator.js';
 import { buildPurchaseDraft, buildPurchaseReceipt, confirmPurchase, createPurchaseDraft, createPurchaseRequestId, loadPurchaseCatalog, loadPurchaseDocuments, loadPurchaseReceiptHistory, mergePurchaseReceipts, probePartialPurchaseReceipts, probePurchaseModule, receivePurchase, receivePurchasePartial, setSupplierItemLink, voidPurchase, PURCHASE_WRITE_ENABLED } from './purchases-integration.js';
@@ -117,6 +117,8 @@ function persistPOS(form){if(!authState.user||!posState.requestId)return;const f
 function restorePOS(catalog){if(!authState.user||posState.requestId)return false;const previous=readPosDraft(posDraftStorage(),authState.user.id,catalog,BRANCHES);if(!previous)return false;if(isEmployee()&&previous.branch!==authState.member.branch_id)return false;posState.quantities=previous.quantities;posState.requestId=previous.requestId;posState.uncertain=previous.uncertain;posState.fields={branch:previous.branch,payment:previous.payment,paper:previous.paper,note:previous.note};return true}
 function isEmployee(){return authState.member?.role==='employee'}
 function isAdmin(){return ['owner','consultant'].includes(authState.member?.role)}
+function cashBranch(){return isEmployee()?authState.member?.branch_id:ui.cashBranch}
+function requireCashOperator(){requireAuthorized();need(isAdmin()||(isEmployee()&&authState.member?.branch_id===cashBranch()),'Acceso denegado: sólo puedes operar la caja de tu sucursal asignada.');}
 function requireAuthorized(){need(authState.status==='authenticated'&&authState.user&&validMember(authState.member,authState.user),'Acceso denegado: se requiere una membresía activa.');}
 function requireAdmin(){requireAuthorized();need(isAdmin(),'Acceso denegado: se requiere una membresía administrativa activa.');}
 function save(){throw Error('Captura suspendida: este módulo aún no tiene escrituras verificadas en Supabase. Los datos locales existentes se conservan.')}
@@ -158,7 +160,7 @@ function showAuthGate(message=''){setAuthStatus(authState.status==='authenticate
 function showApplication(){requireAuthorized();setAuthStatus('authenticated')}
 function setDataMode(text,title){const tag=document.getElementById('data-mode');tag.lastChild.textContent=' '+text;tag.title=title}
 function updateSessionChrome(){const chip=document.getElementById('session-chip'),signOut=document.getElementById('sign-out');if(!authState.member){chip.textContent='';chip.hidden=true;signOut.hidden=true;return}chip.textContent=`${authState.member.display_name} · ${authState.member.role}`;chip.hidden=false;signOut.hidden=false;applyRoleNavigation();const employee=isEmployee();setDataMode(authState.catalogSynced?'Catálogo sincronizado':'Sesión segura',employee?'Panel operativo restringido a tu sucursal; la autorización final se aplica en PostgreSQL y RLS.':authState.catalogSynced?'Sucursales y productos se consultan con Supabase; los demás módulos siguen siendo locales.':'Sesión autenticada; los datos operativos siguen siendo locales.')}
-function applyRoleNavigation(){const allowed=isEmployee()?new Set(['inicio','ventas','inventario','equipo']):null;document.querySelectorAll('#sidebar .nav-item').forEach(link=>{link.hidden=!!allowed&&!allowed.has(link.dataset.page)});document.querySelectorAll('#sidebar .nav-heading').forEach(heading=>{const nav=heading.nextElementSibling;heading.hidden=!!allowed&&(!nav||![...nav.querySelectorAll('.nav-item')].some(link=>!link.hidden));});}
+function applyRoleNavigation(){const allowed=isEmployee()?new Set(['inicio','ventas','inventario','caja','equipo']):null;document.querySelectorAll('#sidebar .nav-item').forEach(link=>{link.hidden=!!allowed&&!allowed.has(link.dataset.page)});document.querySelectorAll('#sidebar .nav-heading').forEach(heading=>{const nav=heading.nextElementSibling;heading.hidden=!!allowed&&(!nav||![...nav.querySelectorAll('.nav-item')].some(link=>!link.hidden));});}
 function validMember(member,user){return !!(user&&member&&member.user_id===user.id&&member.active===true&&((['owner','consultant'].includes(member.role)&&member.branch_id===null)||(member.role==='employee'&&typeof member.branch_id==='string'&&member.branch_id.length>0)))}
 function hydrateReadOnlyCatalog(branches,products){const validBranches=Array.isArray(branches)&&branches.length>0&&branches.every(b=>typeof b.id==='string'&&typeof b.name==='string'&&typeof b.location_description==='string'&&typeof b.active==='boolean');const validProducts=Array.isArray(products)&&products.every(p=>typeof p.id==='string'&&typeof p.name==='string'&&typeof p.unit==='string'&&typeof p.detail==='string'&&typeof p.active==='boolean'&&(p.sale_price===null||Number.isFinite(Number(p.sale_price))));if(!validBranches)throw Error('Las sucursales recibidas no tienen una estructura válida.');BRANCHES=branches.filter(b=>b.active).map(b=>({id:b.id,name:b.name,short:b.location_description}));if(validProducts){data.products=products.map(p=>({id:p.id,name:p.name,unit:p.unit,price:p.sale_price===null?null:Number(p.sale_price),cost:null,detail:p.detail,active:p.active}));authState.catalogSynced=true;authState.lastCatalogRead=new Date().toISOString()}else throw Error('El catálogo recibido no tiene una estructura válida.');}
 async function refreshCatalog(){
@@ -575,7 +577,7 @@ function renderDeliveryTray(locations,items){
  const label={draft:'Pendiente',dispatched:'En tránsito',received:'Recibida',received_with_differences:'Con diferencias',cancelled:'Anulada'};
  const filtered=deliveries.filter(d=>(branch==='all'||d.destination_location_id===branch)&&(status==='all'||d.status===status));
  const itemName=id=>items.find(item=>item.id===id)?.name||id,locationName=id=>locations.find(location=>location.id===id)?.name||id;
- const rows=filtered.map(d=>{const received=new Map();for(const receipt of d.pw_branch_delivery_receipts||[])for(const line of receipt.pw_branch_delivery_receipt_lines||[])received.set(line.delivery_line_id,(received.get(line.delivery_line_id)||0)+Number(line.received_quantity||0));const summary=(d.pw_branch_delivery_lines||[]).map(line=>{const got=received.get(line.id)||0;return `${sanitize(itemName(line.item_id))}: ${Number(line.planned_quantity).toFixed(3)} / ${got.toFixed(3)} / ${(Number(line.planned_quantity)-got).toFixed(3)}`}).join('<br>');const actions=[isAdmin()&&d.status==='draft'?`<button class="mini-action" data-action="delivery-dispatch" data-id="${sanitize(d.id)}">Despachar</button>`:'',(d.status==='dispatched'||d.status==='received_with_differences')?`<button class="mini-action" data-action="delivery-receive" data-id="${sanitize(d.id)}">Recibir</button>`:''].join('');return `<tr><td>${sanitize(fmtDate(d.delivery_date))}</td><td>${sanitize(locationName(d.destination_location_id))}</td><td><span class="pill">${sanitize(label[d.status]||d.status)}</span></td><td>${sanitize(d.prepared_responsible||'—')}</td><td class="mono">${summary||'—'}</td><td>${actions||'—'}</td></tr>`}).join('');
+ const rows=filtered.map(d=>{const received=new Map();for(const receipt of d.pw_branch_delivery_receipts||[])for(const line of receipt.pw_branch_delivery_receipt_lines||[])received.set(line.delivery_line_id,(received.get(line.delivery_line_id)||0)+Number(line.received_quantity||0));const summary=(d.pw_branch_delivery_lines||[]).map(line=>{const got=received.get(line.id)||0;return `${sanitize(itemName(line.item_id))}: ${Number(line.planned_quantity).toFixed(3)} / ${got.toFixed(3)} / ${(Number(line.planned_quantity)-got).toFixed(3)}`}).join('<br>');const canDeleteTest=isAdmin()&&['draft','dispatched'].includes(d.status)&&!(d.pw_branch_delivery_receipts||[]).length;const actions=[isAdmin()&&d.status==='draft'?`<button class="mini-action" data-action="delivery-dispatch" data-id="${sanitize(d.id)}">Despachar</button>`:'',(d.status==='dispatched'||d.status==='received_with_differences')?`<button class="mini-action" data-action="delivery-receive" data-id="${sanitize(d.id)}">Recibir</button>`:'',canDeleteTest?`<button class="mini-action" data-action="delivery-test-delete" data-id="${sanitize(d.id)}">Eliminar prueba</button>`:''].join('');return `<tr><td>${sanitize(fmtDate(d.delivery_date))}</td><td>${sanitize(locationName(d.destination_location_id))}</td><td><span class="pill">${sanitize(label[d.status]||d.status)}</span></td><td>${sanitize(d.prepared_responsible||'—')}</td><td class="mono">${summary||'—'}</td><td>${actions||'—'}</td></tr>`}).join('');
  const branchOptions=[['all','Todas'],...locations.filter(location=>location.branch_id).map(location=>[location.id,location.name])],statusOptions=[['all','Todos'],...Object.entries(label)];
  return `<div class="card table-card" style="margin-top:16px"><div class="table-top"><div><h3>Entregas entre sucursales</h3><p>Cantidad enviada / recibida / pendiente en tránsito. El saldo en tránsito no se acredita a la sucursal.</p></div></div><div class="form-grid" style="margin:12px 0">${selectInput('delivery-branch','Sucursal',branchOptions,branch,'delivery-branch')}${selectInput('delivery-status','Estado',statusOptions,status,'delivery-status')}</div>${table(['Fecha','Destino','Estado','Preparó','Enviada / recibida / tránsito','Acciones'],rows)}</div>`;
 }
@@ -586,8 +588,8 @@ function renderRemoteInventory(){
  const rows=items.map(item=>{const balance=balances.find(row=>row.item_id===item.id&&row.location_id===location);return `<tr><td>${sanitize(item.name)}</td><td>${sanitize(item.base_unit)}</td><td class="mono"><strong>${formatQty(balance?.quantity)}</strong></td><td>${isAdmin()?button('Eliminar','inventory-item-delete','danger','x',`data-id="${sanitize(item.id)}"`):'—'}</td></tr>`}).join('');
  const visible=movements.filter(row=>row.location_id===location),transaction=row=>row.pw_inventory_transactions||{},item=row=>row.pw_inventory_items||{},locationName=locations.find(row=>row.id===location)?.name||location;
  const incoming=visible.filter(row=>Number(row.quantity)>0).reduce((total,row)=>total+Number(row.quantity),0),outgoing=Math.abs(visible.filter(row=>Number(row.quantity)<0).reduce((total,row)=>total+Number(row.quantity),0)),waste=Math.abs(visible.filter(row=>transaction(row).movement_type==='waste').reduce((total,row)=>total+Number(row.quantity),0)),transferCount=new Set(visible.filter(row=>transaction(row).movement_type==='transfer').map(row=>row.transaction_id)).size;
- const typeLabel=type=>({opening:'Saldo inicial',purchase:'Recepción de compra',waste:'Merma',adjustment:'Ajuste',transfer:'Traspaso'}[type]||'Movimiento');
- const history=visible.map(row=>{const tx=transaction(row),audit=audits.find(entry=>entry.entity_id===row.transaction_id),actor=audit?.user_id||tx.created_by?`Usuario ${String(audit?.user_id||tx.created_by).slice(0,8)}`:'Sistema',reason=audit?.metadata?.reason||audit?.metadata?.notes||'—';return `<tr><td>${sanitize(fmtDate(String(tx.created_at||row.created_at).slice(0,10)))}</td><td>${sanitize(typeLabel(tx.movement_type))}</td><td>${sanitize(item(row).name||row.item_id)}</td><td>${Number(row.quantity)>0?'<span class="text-green">+':'<span class="text-red">'}${formatQty(row.quantity)}</span></td><td>${sanitize(actor)}</td><td>${sanitize(reason)}</td></tr>`}).join('');
+ const typeLabel=type=>({opening:'Saldo inicial',purchase:'Recepción de compra',waste:'Merma',adjustment:'Ajuste',transfer:'Traspaso',sale:'Venta / receta'}[type]||'Movimiento');
+ const history=visible.map(row=>{const tx=transaction(row),audit=audits.find(entry=>entry.entity_id===row.transaction_id),actor=audit?.user_id||tx.created_by?`Usuario ${String(audit?.user_id||tx.created_by).slice(0,8)}`:'Sistema',reason=audit?.metadata?.reason||audit?.metadata?.notes||'—',canDeleteTest=isAdmin()&&['opening','waste','adjustment'].includes(tx.movement_type)&&!tx.source_id;return `<tr><td>${sanitize(fmtDate(String(tx.created_at||row.created_at).slice(0,10)))}</td><td>${sanitize(typeLabel(tx.movement_type))}</td><td>${sanitize(item(row).name||row.item_id)}</td><td>${Number(row.quantity)>0?'<span class="text-green">+':'<span class="text-red">'}${formatQty(row.quantity)}</span></td><td>${sanitize(actor)}</td><td>${sanitize(reason)}${canDeleteTest?`<div style="margin-top:6px"><button class="mini-action" data-action="inventory-test-delete" data-id="${sanitize(row.transaction_id)}">Eliminar prueba</button></div>`:''}</td></tr>`}).join('');
  const deliveryReady=op.delivery?.ready===true,pendingDeliveryReady=op.pendingDelivery?.ready===true,actions=operationReady('balances')&&operationReady('items')&&isAdmin()?`${button('Saldo inicial','inventory-opening','secondary','plus')} ${button('Registrar merma','inventory-waste','primary','package')} ${button('Traspasar inventario','inventory-transfer','secondary','truck')} ${pendingDeliveryReady?button('Preparar entrega a sucursal','inventory-delivery','primary','truck'):''}`:'';
  const templates=INVENTORY_ITEM_TEMPLATES.map(template=>`<tr><td>${sanitize(template.name)}</td><td>${sanitize(template.item_type)}</td><td>${sanitize(template.base_unit)}</td><td>${isAdmin()?`<button type="button" class="mini-action" data-action="inventory-item-template" data-id="${sanitize(template.id)}">Usar plantilla</button>`:'Solo consulta'}</td></tr>`).join('');
  return `${pageTitle('Inventario y mermas','Existencias y movimientos auditables por almacén o sucursal.',actions+inventoryViewSwitch())}
@@ -600,16 +602,16 @@ function renderRemoteInventory(){
  <div class="card table-card" style="margin-top:16px"><div class="table-top"><div><h3>Plantillas de catálogo de insumos</h3><p>Sin costos, existencias iniciales ni gramajes. «Usar plantilla» sólo abre el formulario; guardar requiere confirmación en Supabase.</p></div>${isAdmin()?button('Nuevo insumo','inventory-item-new','secondary','plus'):''}</div>${table(['Insumo','Tipo','Unidad base','Acción'],templates)}</div>
  ${renderDeliveryTray(locations,items)}
  <div class="card table-card" style="margin-top:16px"><div class="table-top"><div><h3>Historial auditable</h3><p>Fecha, operación, artículo, cantidad, responsable y motivo.</p></div></div>${table(['Fecha','Operación','Artículo','Movimiento','Registró','Motivo'],history)}</div>
- <p class="caption" style="margin-top:15px">No se estiman consumos de recetas ni salidas por ventas hasta configurar fichas técnicas. No ajustar inventario sin conteo y evidencia.</p>`;
+ <p class="caption" style="margin-top:15px">Las ventas descuentan automáticamente los ingredientes de cada receta activa. Las pruebas manuales sin documentos asociados se pueden eliminar desde el historial; compras, ventas y entregas recibidas siempre conservan su trazabilidad.</p>`;
 }
 function renderRemoteCash(){
- const op=operationsData(),branch=ui.cashBranch,sessions=Array.isArray(op.sessions)?op.sessions.filter(s=>s.branch_id===branch):[],ready=operationReady('sessions');
+ const op=operationsData(),branch=cashBranch(),sessions=Array.isArray(op.sessions)?op.sessions.filter(s=>s.branch_id===branch):[],ready=operationReady('sessions');
  const current=sessions.find(s=>s.business_date===localISO());
  const active=current?.status==='open'?current:null;
  const buttons=ready?(active?button('Cerrar caja','cash-close','primary','check'):(current?.status==='closed'?'<span class="pill">Jornada cerrada</span>':button('Abrir caja','cash-open','primary','plus'))):'';
  return `${pageTitle('Corte de caja','Conciliación de cobros y egresos por jornada.',buttons)}
  ${operationNotice('sessions','Los cálculos de efectivo provienen de las ventas y gastos remotos; los cierres quedan registrados por sucursal.')}
- <div style="margin:18px 0">${branchFilter(branch,'cash-branch',false)}</div>
+ <div style="margin:18px 0">${isEmployee()?`<span class="pill">${sanitize(branchName(branch))}</span>`:branchFilter(branch,'cash-branch',false)}</div>
  <div class="card table-card"><div class="table-top"><h3>Historial de jornadas</h3></div>${table(['Fecha','Estado','Fondo','Esperado','Contado','Diferencia'],sessions.map(s=>`<tr><td>${sanitize(fmtDate(s.business_date))}</td><td>${sanitize(s.status==='closed'?'Cerrado':'Abierto')}</td><td>${money(s.opening_float)}</td><td>${s.expected_cash===null?'—':money(s.expected_cash)}</td><td>${s.counted_cash===null?'—':money(s.counted_cash)}</td><td>${s.difference===null?'—':money(s.difference)}</td></tr>`).join(''))}</div>`;
 }
 function renderRemoteFinances(){
@@ -624,13 +626,13 @@ function renderRemoteFinances(){
  <div class="card table-card"><div class="table-top"><h3>Gastos registrados</h3></div>${table(['Fecha','Sucursal','Categoría','Concepto','Pago','Importe'],rows.map(r=>`<tr><td>${sanitize(fmtDate(r.expense_date))}</td><td>${sanitize(branchName(r.branch_id))}</td><td>${sanitize(r.category)}</td><td>${sanitize(r.description)}</td><td>${sanitize(methodName(r.payment_method))}</td><td>${money(r.amount)}</td></tr>`).join(''))}</div>
  <p class="caption" style="margin-top:15px">Estas cifras no constituyen utilidad neta. Faltan costeo de recetas, nómina, comisiones y conciliación bancaria.</p>`;
 }
-function operationDialog(title,fields,process,submitLabel='Confirmar en Supabase'){
- requireAdmin();const dlg=document.getElementById('dialog'),target=document.getElementById('dialog-content');
+function operationDialog(title,fields,process,submitLabel='Confirmar en Supabase',authorize=requireAdmin){
+ authorize();const dlg=document.getElementById('dialog'),target=document.getElementById('dialog-content');
  target.innerHTML=`<form id="operation-form"><div class="modal-header"><h2>${sanitize(title)}</h2><button type="button" class="icon-button" data-close aria-label="Cerrar">${I('x')}</button></div><div class="modal-body"><div class="form-grid">${fields}</div><p id="operation-error" class="caption" role="alert" hidden></p></div><div class="modal-footer"><button type="button" class="btn btn-ghost" data-close>Cancelar</button><button type="submit" class="btn btn-primary">${sanitize(submitLabel)}</button></div></form>`;
  const form=target.querySelector('form'),submit=form.querySelector('[type="submit"]'),errorBox=target.querySelector('#operation-error'),requestId=operationId();
  target.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=()=>{if(!submit.disabled)dlg.close()});
  form.onsubmit=async event=>{event.preventDefault();if(submit.disabled)return;submit.disabled=true;errorBox.hidden=true;
- try{requireAdmin();await process(new FormData(form),requestId);try{await refreshOperations();if(authState.purchasesProbe?.serverReady)authState.purchaseCatalog=await loadPurchaseCatalog(authState.client);}catch(refreshError){console.warn('La operación se guardó, pero no se pudo refrescar la información:',refreshError.message)}dlg.close();render();toast('Operación confirmada por Supabase.');}
+ try{authorize();await process(new FormData(form),requestId);try{await refreshOperations();if(authState.purchasesProbe?.serverReady)authState.purchaseCatalog=await loadPurchaseCatalog(authState.client);}catch(refreshError){console.warn('La operación se guardó, pero no se pudo refrescar la información:',refreshError.message)}dlg.close();render();toast('Operación confirmada por Supabase.');}
  catch(e){errorBox.hidden=false;errorBox.textContent=e.message||'No se confirmó el movimiento.';toast(errorBox.textContent,'error')}
  finally{submit.disabled=false}};
  dlg.showModal();
@@ -672,9 +674,9 @@ function openDeliveryReceipt(id){
  form.onsubmit=async event=>{event.preventDefault();if(submit.disabled)return;submit.disabled=true;error.hidden=true;try{const lines=pending.map(line=>({delivery_line_id:line.id,quantity:Number(form.elements[`receipt-${line.id}`].value)})).filter(line=>line.quantity>0);await receivePendingDelivery(authState.client,id,{responsible:String(form.elements.responsible.value),notes:String(form.elements.notes.value||''),lines},requestId);await refreshOperations();dlg.close();render();toast('Recepción confirmada por Supabase.')}catch(e){error.hidden=false;error.textContent=e.message||'No se confirmó la recepción.';toast(error.textContent,'error')}finally{submit.disabled=false}};dlg.showModal();
 }
 function openCashOperation(kind){
- const branch=ui.cashBranch,session=Array.isArray(operationsData().sessions)?operationsData().sessions.find(s=>s.branch_id===branch&&s.business_date===localISO()&&s.status==='open'):null;
- if(kind==='open')operationDialog('Abrir caja',`${dateInput()}${numberInput('float','Fondo de apertura',{min:0,step:'0.01',value:0})}<p class="caption form-span">Sucursal: ${sanitize(branchName(branch))}</p>`,(fd,requestId)=>openCashSession(authState.client,{branch,date:String(fd.get('date')),float:Number(fd.get('float'))},requestId));
- else if(session)operationDialog('Cerrar caja',`${numberInput('counted','Efectivo físico contado',{min:0,step:'0.01'})}${numberInput('withdrawals','Retiros del turno',{min:0,step:'0.01',value:0})}${textInput('note','Observaciones',{required:false})}`,(fd,requestId)=>closeCashSession(authState.client,{id:session.id,counted:Number(fd.get('counted')),withdrawals:Number(fd.get('withdrawals')),note:String(fd.get('note')||'')},requestId));
+ const branch=cashBranch(),session=Array.isArray(operationsData().sessions)?operationsData().sessions.find(s=>s.branch_id===branch&&s.business_date===localISO()&&s.status==='open'):null;
+ if(kind==='open')operationDialog('Abrir caja',`${dateInput()}${numberInput('float','Fondo de apertura',{min:0,step:'0.01',value:0})}<p class="caption form-span">Sucursal: ${sanitize(branchName(branch))}</p>`,(fd,requestId)=>openCashSession(authState.client,{branch,date:String(fd.get('date')),float:Number(fd.get('float'))},requestId),'Confirmar en Supabase',requireCashOperator);
+ else if(session)operationDialog('Cerrar caja',`${numberInput('counted','Efectivo físico contado',{min:0,step:'0.01'})}${numberInput('withdrawals','Retiros del turno',{min:0,step:'0.01',value:0})}${textInput('note','Observaciones',{required:false})}`,(fd,requestId)=>closeCashSession(authState.client,{id:session.id,counted:Number(fd.get('counted')),withdrawals:Number(fd.get('withdrawals')),note:String(fd.get('note')||'')},requestId),'Confirmar en Supabase',requireCashOperator);
  else toast('No existe una caja abierta para hoy en esta sucursal.','error');
 }
 function openRemoteExpense(){
@@ -710,14 +712,22 @@ function openCatalogDelete(kind,id){
     :'Sólo se permite si no tiene compras, movimientos, entregas ni recetas asociadas.';
   operationDialog(`Eliminar ${noun}`,`<div class="form-span subtle-banner"><span>${I('alert')}</span><div><strong>Eliminar permanentemente ${sanitize(record.name)}</strong><br>Esta acción borra el registro de Supabase. ${restriction}</div></div>`,()=>deleteCatalogRecord(authState.client,kind,id),'Eliminar permanentemente');
 }
+function openInventoryTestDelete(id){
+ requireAdmin();
+ operationDialog('Eliminar movimiento de prueba',`<div class="form-span subtle-banner"><span>${I('alert')}</span><div><strong>Esta acción elimina sólo una captura manual de prueba.</strong><br>No puede borrar compras, ventas, consumos por receta ni entregas recibidas.</div></div>`,()=>deleteInventoryTestTransaction(authState.client,id),'Eliminar prueba');
+}
+function openDeliveryTestDelete(id){
+ requireAdmin();
+ operationDialog('Eliminar entrega de prueba',`<div class="form-span subtle-banner"><span>${I('alert')}</span><div><strong>Esta acción elimina la entrega de prueba y su salida a tránsito.</strong><br>Sólo está disponible si nadie ha confirmado una recepción.</div></div>`,()=>deleteBranchDeliveryTest(authState.client,id),'Eliminar prueba');
+}
 
 function render(){
   if(authState.status!=='authenticated'||!authState.user||!validMember(authState.member,authState.user)){showAuthGate();return}
-  let page=location.hash.slice(1)||'inicio';const employeePages=new Set(['inicio','ventas','pedido','inventario','equipo']);
+  let page=location.hash.slice(1)||'inicio';const employeePages=new Set(['inicio','ventas','pedido','inventario','caja','equipo']);
   if(!(page in PAGE_NAMES)||isEmployee()&&!employeePages.has(page)){page='inicio';history.replaceState(null,'','#inicio')}
   ui.page=page;document.title=`${PAGE_NAMES[page]} | Plebes Wings`;document.getElementById('breadcrumb-page').textContent=isEmployee()&&page==='inicio'?'Mi turno':PAGE_NAMES[page];
   document.querySelectorAll('[data-page]').forEach(el=>{el.classList.toggle('active',el.dataset.page===page);if(el.dataset.page===page)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current')});
-  const renders=isEmployee()?{inicio:renderEmployeeHome,ventas:renderSales,pedido:renderPOS,inventario:renderRemoteInventory,equipo:renderEmployeeTeam}:{inicio:renderHome,ruta:renderRoadmap,documentos:renderDocuments,ventas:renderSales,pedido:renderPOS,abasto:renderAbasto,inventario:renderRemoteInventory,recetas:renderRecipes,caja:renderRemoteCash,finanzas:renderRemoteFinances,equipo:renderTeam,ajustes:renderSettings};
+  const renders=isEmployee()?{inicio:renderEmployeeHome,ventas:renderSales,pedido:renderPOS,inventario:renderRemoteInventory,caja:renderRemoteCash,equipo:renderEmployeeTeam}:{inicio:renderHome,ruta:renderRoadmap,documentos:renderDocuments,ventas:renderSales,pedido:renderPOS,abasto:renderAbasto,inventario:renderRemoteInventory,recetas:renderRecipes,caja:renderRemoteCash,finanzas:renderRemoteFinances,equipo:renderTeam,ajustes:renderSettings};
   document.getElementById('main-content').innerHTML=renders[page]();document.getElementById('year').textContent=new Date().getFullYear();if(page==='pedido')bindPOS();closeNav();
 }
 function closeNav(){setNav(false)}
@@ -843,7 +853,7 @@ async function importJSON(file){if(!file)return;try{requireAdmin();need(file.siz
 function clickAction(btn){
   requireAuthorized();
   const action=btn.dataset.action,id=btn.dataset.id;
-  if(isEmployee()&&!['sale-new','sale-preview','sale-detail','delivery-receive','inventory-ledger','inventory-simulator'].includes(action)){
+  if(isEmployee()&&!['sale-new','sale-preview','sale-detail','delivery-receive','inventory-ledger','inventory-simulator','cash-open','cash-close'].includes(action)){
     toast('Esta acción está reservada para administración.','error');return;
   }
   if(['product-edit','product-new'].includes(action)&&(!authState.catalogSynced||!authState.client)){
@@ -872,8 +882,10 @@ function clickAction(btn){
     case'inventory-transfer':openStockTransfer();break;
     case'inventory-delivery':openBranchDelivery();break;
     case'delivery-dispatch':openDeliveryDispatch(id);break;
+    case'delivery-test-delete':openDeliveryTestDelete(id);break;
     case'delivery-receive':{const d=(authState.pendingDeliveries||[]).find(row=>row.id===id);if(!d||(isEmployee()&&d.destination_location_id!==authState.member.branch_id)){toast('Entrega no autorizada para esta sucursal.','error');break}openDeliveryReceipt(id);break;}
     case'inventory-waste':openInventoryMovement('waste');break;
+    case'inventory-test-delete':openInventoryTestDelete(id);break;
     case'cash-open':openCashOperation('open');break;
     case'cash-close':openCashOperation('close');break;
     case'finance-expense':openRemoteExpense();break;

@@ -49,7 +49,7 @@ test('ticket: rechaza productos inválidos, pagos mixtos incorrectos y falta de 
 test('diagnóstico valida lectura y RPC transaccional sin crear registros',async()=>{
   const names=[];let rpcCalls=0;
   const client={from(table){names.push(table);return {select(_cols,opts){assert.equal(opts.head,true);return Promise.resolve({data:null,count:0,error:null})}}},
-    async rpc(name,{p_request}){rpcCalls++;assert.equal(name,'pw_register_sale_v2');assert.deepEqual(p_request,{});return {data:null,error:{message:'Identificador de solicitud inválido.'}}}};
+    async rpc(name,{p_request}){rpcCalls++;assert.equal(name,'pw_register_sale_v3');assert.deepEqual(p_request,{});return {data:null,error:{message:'Identificador de solicitud inválido.'}}}};
   const status=await probeSalesTables(client);
   assert.deepEqual(names,['pw_sales','pw_sale_lines','pw_sale_payments']);
   assert.equal(rpcCalls,1);
@@ -66,7 +66,7 @@ test('diagnóstico acepta mensajes SQL sin acentos y rechaza RPC inaccesible',as
 
 test('RPC autorizada solo registra confirmaciones y expone fallos',async()=>{
   const ticket={id:UUID,ticket:'PW-MOR-20261110-'+UUID.replace(/-/g,''),total:329.8};
-  const client={async rpc(name,{p_request}){assert.equal(name,'pw_register_sale_v2');assert.equal(p_request.request_id,UUID);return {data:ticket,error:null}}};
+  const client={async rpc(name,{p_request}){assert.equal(name,'pw_register_sale_v3');assert.equal(p_request.request_id,UUID);return {data:ticket,error:null}}};
   await assert.rejects(registerSale(client,{request_id:UUID}),/bloqueado/);
   assert.deepEqual(await registerSale(client,{request_id:UUID},{approved:true}),ticket);
   await assert.rejects(registerSale({rpc:async()=>({data:null,error:{message:'Error de permisos'}})},{request_id:UUID},{approved:true}),/permisos/);

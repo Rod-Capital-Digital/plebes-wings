@@ -8,7 +8,7 @@ export async function fetchOperations(client){
   items:()=>client.from('pw_inventory_items').select('id,name,item_type,base_unit,active').eq('active',true).order('name'),
   locations:()=>client.from('pw_stock_locations').select('id,name,branch_id,active').eq('active',true).order('name'),
   balances:()=>client.from('pw_inventory_balances').select('location_id,item_id,quantity'),
-  movements:()=>client.from('pw_inventory_movements').select('id,transaction_id,location_id,item_id,quantity,created_at,pw_inventory_transactions(id,movement_type,created_by,created_at),pw_inventory_items(name,base_unit),pw_stock_locations(name)').order('created_at',{ascending:false}).limit(250),
+  movements:()=>client.from('pw_inventory_movements').select('id,transaction_id,location_id,item_id,quantity,created_at,pw_inventory_transactions(id,movement_type,source_id,created_by,created_at),pw_inventory_items(name,base_unit),pw_stock_locations(name)').order('created_at',{ascending:false}).limit(250),
   audit:()=>client.from('pw_audit_events').select('entity_id,user_id,action,metadata,created_at').eq('module','inventory').order('created_at',{ascending:false}).limit(250),
   sessions:()=>client.from('pw_cash_sessions').select('id,branch_id,business_date,opening_float,cash_withdrawals,counted_cash,expected_cash,difference,status,created_at:opened_at').order('business_date',{ascending:false}).limit(100),
   expenses:()=>client.from('pw_expenses').select('id,expense_date,branch_id,description,category,payment_method,paid_from_drawer,amount,created_at').order('created_at',{ascending:false}).limit(200)
@@ -29,6 +29,14 @@ export async function catalogUpdate(client,table,id,payload){
 export async function deleteCatalogRecord(client,kind,id){
  if(!client?.rpc||!['supplier','item'].includes(kind)||!id)throw Error('Eliminación de catálogo no autorizada.');
  return check(await client.rpc('pw_delete_operational_catalog_v1',{p_kind:kind,p_id:id}),'No fue posible eliminar el registro del catálogo.');
+}
+export async function deleteInventoryTestTransaction(client,id){
+ if(!client?.rpc||!id)throw Error('El movimiento de prueba no es válido.');
+ return check(await client.rpc('pw_delete_inventory_test_transaction_v1',{p_transaction_id:id}),'No fue posible eliminar el movimiento de prueba.');
+}
+export async function deleteBranchDeliveryTest(client,id){
+ if(!client?.rpc||!id)throw Error('La entrega de prueba no es válida.');
+ return check(await client.rpc('pw_delete_branch_delivery_test_v1',{p_delivery_id:id}),'No fue posible eliminar la entrega de prueba.');
 }
 export async function updateProjectTask(client,{id,status,note=''}){
  if(!client?.rpc||!id||!['Pendiente','En curso','Validado'].includes(status)||String(note).length>850)throw Error('Actualización de tarea no autorizada.');
