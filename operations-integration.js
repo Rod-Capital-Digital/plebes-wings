@@ -26,6 +26,14 @@ export async function catalogUpdate(client,table,id,payload){
  if(table!=='pw_suppliers'||!id)throw Error('Actualización de catálogo no autorizada.');
  const r=await client.from(table).update(payload).eq('id',id).select('id').single();return check(r,'No fue posible actualizar el proveedor.');
 }
+export async function deleteCatalogRecord(client,kind,id){
+ if(!client?.rpc||!['supplier','item'].includes(kind)||!id)throw Error('Eliminación de catálogo no autorizada.');
+ return check(await client.rpc('pw_delete_operational_catalog_v1',{p_kind:kind,p_id:id}),'No fue posible eliminar el registro del catálogo.');
+}
+export async function updateProjectTask(client,{id,status,note=''}){
+ if(!client?.rpc||!id||!['Pendiente','En curso','Validado'].includes(status)||String(note).length>850)throw Error('Actualización de tarea no autorizada.');
+ return check(await client.rpc('pw_update_project_task_v1',{p_task_id:String(id),p_status:status,p_note:String(note).trim()}),'No fue posible actualizar la Ruta del proyecto.');
+}
 export async function postInventory(client,{location_id,item_id,quantity,movement_type,notes=''},requestId=makeId()){
  if(!['opening','waste','adjustment'].includes(movement_type))throw Error('Tipo de movimiento inválido.');
  if(!Number.isFinite(Number(quantity))||Number(quantity)===0)throw Error('Cantidad inválida.');

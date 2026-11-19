@@ -68,7 +68,7 @@ test('restaura sesión válida sin mostrar login, autoriza y renderiza; una inic
   assert.equal(h.api.authState.status,'authenticated');assert.equal(h.element('app').hidden,false);
   assert.match(h.element('main-content').innerHTML,/Panorama operativo/);
   assert.equal(h.transitions.includes('unauthenticated'),false);
-  assert.deepEqual(h.calls,['getUser','pw_members','pw_branches','pw_products']);
+  assert.deepEqual(h.calls,['getUser','pw_members','pw_branches','pw_products','pw_project_tasks']);
   assert.equal(h.subscriptions,1);assert.equal(h.storageReads,1);
 });
 
