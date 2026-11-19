@@ -47,6 +47,11 @@ export async function postInventory(client,{location_id,item_id,quantity,movemen
  if(!Number.isFinite(Number(quantity))||Number(quantity)===0)throw Error('Cantidad inválida.');
  return check(await client.rpc('pw_post_inventory_movement_v1',{p_request:{request_id:requestId,location_id,item_id,quantity:Number(quantity),movement_type,notes:String(notes).slice(0,500)}}),'No se confirmó el movimiento.');
 }
+export async function produceInventory(client,{production_date,location_id='central',input_item_id,output_item_id,input_quantity,output_quantity,responsible_name,notes=''},requestId=makeId()){
+ if(location_id!=='central'||!input_item_id||!output_item_id||input_item_id===output_item_id||!/^\d{4}-\d{2}-\d{2}$/.test(String(production_date||''))||!String(responsible_name||'').trim()||String(responsible_name).trim().length>160||String(notes||'').length>500)throw Error('Datos de preparación inválidos.');
+ for(const value of [input_quantity,output_quantity])if(!Number.isFinite(Number(value))||Number(value)<=0||Math.round(Number(value)*1000)!==Number(value)*1000)throw Error('Las cantidades de preparación deben ser positivas y tener hasta tres decimales.');
+ return check(await client.rpc('pw_produce_inventory_v1',{p_request:{request_id:requestId,production_date:String(production_date),location_id,input_item_id,output_item_id,input_quantity:Number(input_quantity),output_quantity:Number(output_quantity),responsible_name:String(responsible_name).trim(),notes:String(notes||'').trim()}}),'No se confirmó la preparación.');
+}
 export async function cashSummary(client,branch,date){return check(await client.rpc('pw_cash_summary_v1',{p_branch_id:branch,p_business_date:date}),'No fue posible calcular caja.');}
 export async function openCashSession(client,{branch,date,float},requestId=makeId()){
  return check(await client.rpc('pw_open_cash_session_v1',{p_branch_id:branch,p_business_date:date,p_float:Number(float),p_request_id:requestId}),'No se confirmó la apertura.');
