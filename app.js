@@ -7,6 +7,7 @@ import { LEGAL_DOCUMENTS, findLegalDocument, listLegalVersions, signLegalDocumen
 import { adjustCartQuantity, buildSaleDraft, cartSummary, probeSalesTables, registerSale, visualCatalog, voidSale, SALES_WRITE_ENABLED } from './sales-integration.js';
 import {fetchOperations,catalogInsert,catalogUpdate,deleteCatalogRecord,deleteInventoryTestTransaction,deleteBranchDeliveryTest,updateProjectTask,postInventory,produceInventory,cashSummary,openCashSession,closeCashSession,recordExpense,transferStock,probeBranchDeliveryModule,operationId} from './operations-integration.js';
 import {INVENTORY_ITEM_TEMPLATES,INVENTORY_ITEM_TYPES,INVENTORY_UNITS,isDiscreteInventoryUnit} from './inventory-catalog.js';
+import {loadRecipeCosts,buildRecipeOverview} from './recipes-integration.js';
 import {runInventorySimulationScenario} from './inventory-simulator.js';
 import { buildPurchaseDraft, buildPurchaseReceipt, confirmPurchase, createPurchaseDraft, createPurchaseRequestId, loadPurchaseCatalog, loadPurchaseDocuments, loadPurchaseReceiptHistory, mergePurchaseReceipts, probePartialPurchaseReceipts, probePurchaseModule, receivePurchase, receivePurchasePartial, setSupplierItemLink, voidPurchase, PURCHASE_WRITE_ENABLED } from './purchases-integration.js';
 import {createPendingDelivery as prepareBranchDelivery,dispatchPendingDelivery,receivePendingDelivery,loadPendingDeliveries,probePendingDeliveries} from './branch-deliveries-integration.js';
@@ -110,7 +111,7 @@ function loadLocalHistory(){storageEnabled=true;try{const saved=localStorage.get
 
 const ui={page:'inicio',branch:'all',abastoTab:'compras',inventoryBranch:'mora',inventoryLocation:'central',inventoryView:'ledger',cashBranch:'mora',financeBranch:'all',salesBranch:'all',deliveryBranch:'all',deliveryStatus:'all'};
 let inventorySimulation=null;
-const authState={status:'initializing',configured:false,client:null,user:null,member:null,catalogSynced:false,lastCatalogRead:null,epoch:0,subscription:null,initialization:null,validation:null,loginPending:false,blocked:false,salesProbe:null,remoteSales:[],salesLoaded:false,purchasesProbe:null,partialPurchaseReceipts:{ready:false},purchaseCatalog:{suppliers:[],items:[],locations:[]},remotePurchases:[],purchasesLoaded:false,operations:{},pendingDeliveries:[],legalVersions:{},projectTasksLoaded:false};
+const authState={status:'initializing',configured:false,client:null,user:null,member:null,catalogSynced:false,lastCatalogRead:null,epoch:0,subscription:null,initialization:null,validation:null,loginPending:false,blocked:false,salesProbe:null,remoteSales:[],salesLoaded:false,purchasesProbe:null,partialPurchaseReceipts:{ready:false},purchaseCatalog:{suppliers:[],items:[],locations:[]},remotePurchases:[],purchasesLoaded:false,operations:{},recipes:{status:'idle',overview:null,costAccess:'unknown',error:'',costError:'',loadedAt:null},pendingDeliveries:[],legalVersions:{},projectTasksLoaded:false};
 const posState={quantities:{},requestId:null,fields:null,uncertain:false};
 function posDraftStorage(){try{return window.localStorage}catch{return null}}
 function persistPOS(form){if(!authState.user||!posState.requestId)return;const fields=form?{branch:form.elements.branch?.value,payment:form.elements.payment?.value,paper:form.elements.paper?.value,note:form.elements.note?.value}:posState.fields||{};posState.fields=fields;writePosDraft(posDraftStorage(),authState.user.id,{requestId:posState.requestId,quantities:posState.quantities,uncertain:posState.uncertain,...fields})}
@@ -131,7 +132,7 @@ async function withAuthTimeout(operation){
   finally{clearTimeout(timer)}
 }
 function clearSessionMemory(){
-  authState.user=null;authState.member=null;authState.catalogSynced=false;authState.lastCatalogRead=null;authState.salesProbe=null;authState.remoteSales=[];authState.salesLoaded=false;authState.purchasesProbe=null;authState.partialPurchaseReceipts={ready:false};authState.purchaseCatalog={suppliers:[],items:[],locations:[]};authState.remotePurchases=[];authState.purchasesLoaded=false;authState.operations={};authState.pendingDeliveries=[];authState.legalVersions={};authState.projectTasksLoaded=false;posState.quantities={};posState.requestId=null;posState.fields=null;posState.uncertain=false;
+  authState.user=null;authState.member=null;authState.catalogSynced=false;authState.lastCatalogRead=null;authState.salesProbe=null;authState.remoteSales=[];authState.salesLoaded=false;authState.purchasesProbe=null;authState.partialPurchaseReceipts={ready:false};authState.purchaseCatalog={suppliers:[],items:[],locations:[]};authState.remotePurchases=[];authState.purchasesLoaded=false;authState.operations={};authState.recipes={status:'idle',overview:null,costAccess:'unknown',error:'',costError:'',loadedAt:null};authState.pendingDeliveries=[];authState.legalVersions={};authState.projectTasksLoaded=false;posState.quantities={};posState.requestId=null;posState.fields=null;posState.uncertain=false;
   data=freshData();BRANCHES=[];
   document.getElementById('auth-password').value='';
   document.getElementById('auth-email').value='';
@@ -430,10 +431,29 @@ async function refreshRemoteSales(epoch=authState.epoch){
   authState.salesLoaded=true;
   return true;
 }
+async function refreshRecipes(epoch=authState.epoch){
+  if(!isAdmin()||!authState.client)throw Error('Se requiere una sesión administrativa para consultar recetas.');
+  authState.recipes={...authState.recipes,status:'loading',error:''};
+  if(location.hash==='#recetas')render();
+  try{
+    const snapshot=await loadRecipeCosts(authState.client);
+    if(epoch!==authState.epoch||authState.status!=='authenticated')return false;
+    authState.recipes={status:'ready',overview:buildRecipeOverview(snapshot),costAccess:snapshot.costAccess,error:'',costError:snapshot.costError||'',loadedAt:new Date().toISOString()};
+    if(location.hash==='#recetas')render();
+    return true;
+  }catch(error){
+    if(epoch===authState.epoch&&authState.status==='authenticated'){
+      authState.recipes={...authState.recipes,status:'error',overview:null,error:error.message||'No se pudieron consultar las recetas.'};
+      if(location.hash==='#recetas')render();
+    }
+    return false;
+  }
+}
 async function verifyAuxiliaryModules(epoch){
   if(epoch!==authState.epoch||authState.status!=='authenticated')return;
   try{const probe=await probeSalesTables(authState.client);if(epoch===authState.epoch&&authState.status==='authenticated'){authState.salesProbe=probe;if(probe.serverReady){try{await refreshRemoteSales(epoch)}catch(error){authState.salesProbe={...probe,serverReady:false,error:error.message};}}if(location.hash==='#ventas'||(isEmployee()&&location.hash==='#inicio'))render();}}
   catch{if(epoch===authState.epoch)authState.salesProbe={salesReadable:false,linesReadable:false,serverReady:false,error:'No se pudo comprobar el módulo'};}
+  if(!isEmployee())void refreshRecipes(epoch);
   try{const probe=await probePurchaseModule(authState.client);if(epoch===authState.epoch&&authState.status==='authenticated'){authState.purchasesProbe=probe;authState.purchaseCatalog=probe.catalog;authState.remotePurchases=probe.documents;authState.purchasesLoaded=true;const partial=await probePartialPurchaseReceipts(authState.client);if(epoch===authState.epoch){authState.partialPurchaseReceipts=partial;if(partial.ready)await refreshRemotePurchases(epoch);}if(location.hash==='#abasto')render();}}
   catch(error){if(epoch===authState.epoch){authState.purchasesProbe={serverReady:false,error:error.message||'No se pudo comprobar compras.'};authState.partialPurchaseReceipts={ready:false};authState.purchasesLoaded=false;}}
   try{const delivery=await probeBranchDeliveryModule(authState.client),pendingDelivery=await probePendingDeliveries(authState.client);if(epoch===authState.epoch){authState.operations={...authState.operations,delivery,pendingDelivery};authState.pendingDeliveries=pendingDelivery.ready?await loadPendingDeliveries(authState.client):[]}await refreshOperations(epoch)}catch(error){if(epoch===authState.epoch)authState.operations={loadError:error.message}}
@@ -521,8 +541,32 @@ function renderTeam(){return `${pageTitle('Personal, seguridad y procesos','Prep
 <div class="card" style="margin-bottom:19px"><h2>Protección legal y de la información</h2><p class="section-intro">Se prepararán documentos y controles reales, no solo una cláusula para «impedir que compitan».</p><div class="policy-list"><div class="policy-item"><h4>Confidencialidad de secretos industriales</h4><p>Identificar por escrito la información reservada, limitar accesos, documentar el conocimiento del deber de confidencialidad y someter el convenio a revisión jurídica. Artículos 163–166 de la Ley Federal de Protección a la Propiedad Industrial. <a target="_blank" rel="noopener noreferrer" href="https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPPI.pdf">Consultar ley</a>.</p></div><div class="policy-item"><h4>No competencia de dos años</h4><p>No asumir que prohibir trabajar en el mismo giro durante dos años sea válido. El artículo 5 constitucional protege la libertad de trabajo. Enfocar la protección en secretos, no en vetar un empleo lícito. <a target="_blank" rel="noopener noreferrer" href="https://museodelasconstituciones.unam.mx/articulo-5/">Consultar artículo 5</a>.</p></div><div class="policy-item"><h4>Obligaciones laborales</h4><p>Antes de contratar: revisar contrato de trabajo, jornada real, prestaciones, inscripción patronal/IMSS, obligaciones fiscales y aviso de privacidad. La Ley Federal del Trabajo, artículo 134 fracción XIII, contempla el deber de guardar secretos. <a target="_blank" rel="noopener noreferrer" href="https://www.diputados.gob.mx/LeyesBiblio/pdf/LFT.pdf">Consultar LFT</a>.</p></div><div class="policy-item"><h4>Seguridad e higiene alimentaria</h4><p>El piloto no suspende el cumplimiento sanitario. Incorporar limpieza, control de temperaturas, transporte y manejo de alimentos conforme a la NOM-251-SSA1-2009. <a target="_blank" rel="noopener noreferrer" href="https://sidof.segob.gob.mx/notas/docFuente/5133449">Consultar norma</a>.</p></div></div><p class="caption" style="margin-top:15px">Guía de planeación, no asesoría legal individual. Verificar permisos aplicables al comercio en cada ubicación con la autoridad competente y con profesionales autorizados.</p></div>
 <div class="card"><div class="section-heading"><h2>Documentos por integrar</h2><a class="link xs" href="#documentos">Abrir biblioteca completa</a></div><div class="grid grid-3">${[['Convenio de confidencialidad','Protección de recetas e información sensible.'],['Contrato de trabajo','Funciones, horarios y condiciones del puesto.'],['Aviso de privacidad','Tratamiento de datos personales del trabajador.']].map(([t,d])=>`<div class="kpi-simple"><strong style="font-size:14px;margin:0 0 8px">${t}</strong><span class="muted xs">${d}</span><div style="margin-top:12px">${pill('Pendiente')}</div></div>`).join('')}</div></div>`}
 function renderRecipes(){
- const products=data.products.filter(product=>product.active!==false),rows=products.map(product=>`<tr><td>${sanitize(product.name)}</td><td>${sanitize(product.unit)}</td><td>${money(product.price)}</td><td><span class="pill">Pendiente de captura</span></td><td>—</td><td>—</td></tr>`).join('');
- return `${pageTitle('Recetas y costos','Fichas técnicas versionadas: los costos y márgenes permanecen incompletos hasta capturar ingredientes y costos reales.')}<div class="subtle-banner">${I('shield')} <div><strong>Preparación segura.</strong> La migración 16 aún no está desplegada: no se guardan recetas ni costos locales, no se modifican precios y no se descuenta inventario de ventas.</div></div><div class="card table-card" style="margin-top:16px"><div class="table-top"><div><h3>Productos comerciales</h3><p>Precio oficial y estado de ficha técnica. Usa costos por unidad base y conversiones explícitas kg/g o l/ml al habilitar la migración.</p></div></div>${table(['Producto','Presentación','Precio oficial','Receta','Costo estimado','Margen bruto'],rows)}</div><div class="card" style="margin-top:16px"><h3>Reglas de consumo preparadas</h3><p class="section-intro">Una venta futura deberá fijar la versión activa de receta, generar una sola transacción de salida por <code>request_id</code> y crear reversos auditados al anularse. No se integrará a la RPC de ventas vigente sin pruebas aisladas y autorización.</p></div>`;
+ const state=authState.recipes;
+ if(state.status==='loading'||state.status==='idle')return `${pageTitle('Recetas y costos','Consulta de solo lectura conectada a Supabase.')}<div class="subtle-banner">${I('clock')} <div><strong>Consultando recetas…</strong> Se están validando productos, versiones, partidas e inventario con tu sesión autorizada.</div></div>`;
+ if(state.status==='error')return `${pageTitle('Recetas y costos','Consulta de solo lectura conectada a Supabase.',button('Actualizar datos','recipes-refresh','secondary','clock'))}<div class="subtle-banner">${I('alert')} <div><strong>No se pudieron sincronizar las recetas.</strong> ${sanitize(state.error)} No se muestran datos locales como si fueran oficiales.</div></div>`;
+ const overview=state.overview,{rows,summary}=overview;
+ const statusLabel=status=>({active:'Activa',draft:'Borrador',complete:'Completa',retired:'Retirada'})[status]||'Sin receta';
+ const consumption=row=>!row.recipe?'—':row.lines.length===1?`${integer(row.lines[0].quantity)} ${sanitize(row.lines[0].unit)}`:row.lines.length?`${row.lines.length} artículos`:'Sin partidas';
+ const itemNames=row=>row.items.map(item=>sanitize(item.name)).join(', ')||'Sin artículo asociado';
+ const costText=row=>row.cost.complete?money(row.cost.unitCost):'Costo pendiente de captura';
+ const marginText=row=>row.cost.complete&&row.cost.margin!==null?`${money(row.cost.margin)} (${integer(row.cost.marginPercent)}%)`:'—';
+ const tableRows=rows.map(row=>`<tr><td><strong>${sanitize(row.product.name)}</strong></td><td>${sanitize(row.product.unit||row.product.detail||'—')}</td><td>${row.product.sale_price===null?'Sin precio':money(row.product.sale_price)}</td><td>v${sanitize(row.recipe?.version_no??'—')} · <span class="pill">${sanitize(statusLabel(row.recipe?.status))}</span></td><td>${consumption(row)}</td><td>${itemNames(row)}</td><td>${costText(row)}</td><td>${marginText(row)}</td><td>${row.recipe?button('Detalle','recipe-detail','secondary','clipboard',`data-id="${sanitize(row.recipe.id)}"`):'—'}</td></tr>`).join('');
+ const costNotice=state.costAccess==='unavailable'?`<div class="subtle-banner" style="margin-top:16px">${I('shield')} <div><strong>Costos no configurados para este acceso.</strong> Las recetas se muestran sin exponer costos. Solicita una política RLS de solo lectura para administradores si corresponde.</div></div>`:'';
+ return `${pageTitle('Recetas y costos','Fichas técnicas consultadas desde Supabase; esta pantalla no escribe ni activa recetas.',button('Actualizar datos','recipes-refresh','secondary','clock'))}
+ <div class="subtle-banner">${I('shield')} <div><strong>Recetas sincronizadas con Supabase.</strong> Las recetas activas controlan el consumo de inventario; las recetas en borrador están pendientes de activación.</div></div>
+ <div class="grid grid-3" style="margin:16px 0">${kpi('Productos activos',integer(summary.products),'Catálogo comercial','package')}${kpi('Recetas activas',integer(summary.active),'Controlan consumo','check','green')}${kpi('Recetas en borrador',integer(summary.draft),'No descuentan inventario','clock')}${kpi('Sin receta',integer(summary.withoutRecipe),'Requieren ficha técnica','alert','red')}${kpi('Costos completos',integer(summary.completeCosts),'Con respaldo de insumos','coins','green')}${kpi('Costos pendientes',integer(summary.pendingCosts),'No se infieren como $0','alert')}</div>
+ <div class="card table-card"><div class="table-top"><div><h3>Recetas por producto</h3><p>Precio oficial, versión vigente y consumo declarado. El margen mostrado es bruto estimado, no utilidad neta.</p></div></div>${table(['Producto','Presentación','Precio','Versión / estado','Consumo por venta','Artículo asociado','Costo unitario','Margen bruto',''],tableRows)}</div>${costNotice}`;
+}
+function openRecipeDetail(recipeId){
+ const row=authState.recipes.overview?.rows.find(candidate=>candidate.recipe?.id===recipeId);
+ if(!row)return toast('La receta ya no está disponible. Actualiza los datos.','error');
+ const recipe=row.recipe,itemById=new Map(row.items.map(item=>[item.id,item]));
+ const lines=row.lines.map(line=>{const item=itemById.get(line.item_id);return `<tr><td>${sanitize(item?.name||'Artículo no disponible')}</td><td>${integer(line.quantity)}</td><td>${sanitize(line.unit||item?.base_unit||'—')}</td><td>${sanitize(item?.item_type||'—')}</td></tr>`}).join('');
+ const calculated=row.cost.complete?money(row.cost.unitCost):'Costo pendiente de captura';
+ const dlg=document.getElementById('dialog'),target=document.getElementById('dialog-content');
+ target.innerHTML=`<div class="modal-header"><div><h2>${sanitize(row.product.name)}</h2><p>${sanitize(recipe.name)} · versión ${sanitize(recipe.version_no)}</p></div><button type="button" class="icon-button" data-modal-close>${I('x')}</button></div><div class="modal-body"><div class="grid grid-2"><div class="metric-line"><span>Estado</span><strong>${sanitize(({active:'Activa',draft:'Borrador',complete:'Completa',retired:'Retirada'})[recipe.status]||recipe.status)}</strong></div><div class="metric-line"><span>Rendimiento</span><strong>${integer(recipe.yield_units)}</strong></div><div class="metric-line"><span>Merma</span><strong>${integer(recipe.waste_percent)}%</strong></div><div class="metric-line"><span>Creada</span><strong>${sanitize(fmtDate(String(recipe.created_at||'').slice(0,10)))}</strong></div><div class="metric-line"><span>Costo calculado</span><strong>${calculated}</strong></div></div><div class="card table-card" style="margin-top:16px"><div class="table-top"><h3>Artículos vinculados</h3></div>${table(['Artículo','Cantidad','Unidad','Tipo'],lines)}</div><p class="caption" style="margin-top:14px">${row.cost.complete?'Costo calculado con costos unitarios autorizados, rendimiento y merma.':'Costo pendiente de captura: no se trata como costo $0.'}</p></div><div class="modal-footer"><button type="button" class="btn btn-ghost" data-modal-close>Cerrar</button></div>`;
+ target.querySelectorAll('[data-modal-close]').forEach(node=>node.addEventListener('click',()=>dlg.close()));
+ dlg.showModal();
 }
 function renderSettings(){
   const canEdit=Boolean(authState.catalogSynced&&authState.client&&authState.user&&validMember(authState.member,authState.user));
@@ -877,6 +921,8 @@ function clickAction(btn){
   switch(action){
     case'go-ruta':location.hash='#ruta';break;
     case'go-ajustes':location.hash='#ajustes';break;
+    case'recipes-refresh':void refreshRecipes(authState.epoch);break;
+    case'recipe-detail':openRecipeDetail(id);break;
     case'sale-new':openSale();break;
     case'sale-preview':openSale();break;
     case'pos-retry-check':void verifyAuxiliaryModules(authState.epoch).then(()=>render()).catch(error=>toast(error.message||'No fue posible verificar ventas.','error'));break;
