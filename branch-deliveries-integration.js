@@ -1,10 +1,11 @@
+import {isDiscreteInventoryUnit} from './inventory-catalog.js';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const makeId=()=>globalThis.crypto?.randomUUID?.()||`${Date.now().toString(16).padStart(8,'0')}-0000-4000-8000-${Math.random().toString(16).slice(2,14).padEnd(12,'0')}`;
 const checked=async(result,message)=>{if(result?.error)throw Error(`${message} ${result.error.message||''}`.trim());if(!result?.data)throw Error(message);return result.data};
 const quantity=value=>{const n=Number(value);return Number.isFinite(n)&&n>0&&Math.round(n*1000)===n*1000&&n<=1000000?n:null};
 function validateLines(lines,key='item_id'){
  if(!Array.isArray(lines)||lines.length<1||lines.length>80)throw Error('La entrega requiere de 1 a 80 partidas.');
- const seen=new Set();return lines.map(line=>{const id=String(line?.[key]||'');const q=quantity(line?.quantity);if(!id||seen.has(id)||q===null)throw Error('Las partidas deben ser únicas y usar cantidades positivas de hasta tres decimales.');seen.add(id);return {[key]:id,quantity:q}});
+ const seen=new Set();return lines.map(line=>{const id=String(line?.[key]||''),unit=String(line?.base_unit||'').trim();const q=quantity(line?.quantity);if(!id||seen.has(id)||q===null)throw Error('Las partidas deben ser únicas y usar cantidades positivas de hasta tres decimales.');if(unit&&isDiscreteInventoryUnit(unit)&&!Number.isInteger(q))throw Error(`El artículo seleccionado se controla por ${unit}; captura una cantidad entera.`);seen.add(id);return {[key]:id,quantity:q}});
 }
 export const deliveryRequestId=makeId;
 export async function probePendingDeliveries(client){

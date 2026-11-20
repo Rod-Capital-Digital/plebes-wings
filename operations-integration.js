@@ -1,5 +1,5 @@
 /* Plebes Wings: remote operational data only. No localStorage persistence. */
-import {validateInventoryItem} from './inventory-catalog.js';
+import {validateInventoryItem,isDiscreteInventoryUnit} from './inventory-catalog.js';
 const makeId=()=>globalThis.crypto?.randomUUID?.()||(()=>{throw Error('Este navegador requiere un generador seguro de identificadores.');})();
 const check=(result,message)=>{if(result.error)throw Error(result.error.message||message);return result.data;};
 export async function fetchOperations(client){
@@ -42,14 +42,16 @@ export async function updateProjectTask(client,{id,status,note=''}){
  if(!client?.rpc||!id||!['Pendiente','En curso','Validado'].includes(status)||String(note).length>850)throw Error('Actualización de tarea no autorizada.');
  return check(await client.rpc('pw_update_project_task_v1',{p_task_id:String(id),p_status:status,p_note:String(note).trim()}),'No fue posible actualizar la Ruta del proyecto.');
 }
-export async function postInventory(client,{location_id,item_id,quantity,movement_type,notes=''},requestId=makeId()){
+export async function postInventory(client,{location_id,item_id,quantity,movement_type,notes='',base_unit=''},requestId=makeId()){
  if(!['opening','waste','adjustment'].includes(movement_type))throw Error('Tipo de movimiento inválido.');
  if(!Number.isFinite(Number(quantity))||Number(quantity)===0)throw Error('Cantidad inválida.');
+ if(base_unit&&isDiscreteInventoryUnit(base_unit)&&!Number.isInteger(Number(quantity)))throw Error(`El artículo se controla por ${base_unit}; captura una cantidad entera.`);
  return check(await client.rpc('pw_post_inventory_movement_v1',{p_request:{request_id:requestId,location_id,item_id,quantity:Number(quantity),movement_type,notes:String(notes).slice(0,500)}}),'No se confirmó el movimiento.');
 }
-export async function produceInventory(client,{production_date,location_id='central',input_item_id,output_item_id,input_quantity,output_quantity,responsible_name,notes=''},requestId=makeId()){
+export async function produceInventory(client,{production_date,location_id='central',input_item_id,output_item_id,input_quantity,output_quantity,input_unit='',output_unit='',responsible_name,notes=''},requestId=makeId()){
  if(location_id!=='central'||!input_item_id||!output_item_id||input_item_id===output_item_id||!/^\d{4}-\d{2}-\d{2}$/.test(String(production_date||''))||!String(responsible_name||'').trim()||String(responsible_name).trim().length>160||String(notes||'').length>500)throw Error('Datos de preparación inválidos.');
  for(const value of [input_quantity,output_quantity])if(!Number.isFinite(Number(value))||Number(value)<=0||Math.round(Number(value)*1000)!==Number(value)*1000)throw Error('Las cantidades de preparación deben ser positivas y tener hasta tres decimales.');
+ if((input_unit&&isDiscreteInventoryUnit(input_unit)&&!Number.isInteger(Number(input_quantity)))||(output_unit&&isDiscreteInventoryUnit(output_unit)&&!Number.isInteger(Number(output_quantity))))throw Error('Las porciones y unidades discretas de preparación deben ser enteras.');
  return check(await client.rpc('pw_produce_inventory_v1',{p_request:{request_id:requestId,production_date:String(production_date),location_id,input_item_id,output_item_id,input_quantity:Number(input_quantity),output_quantity:Number(output_quantity),responsible_name:String(responsible_name).trim(),notes:String(notes||'').trim()}}),'No se confirmó la preparación.');
 }
 export async function cashSummary(client,branch,date){return check(await client.rpc('pw_cash_summary_v1',{p_branch_id:branch,p_business_date:date}),'No fue posible calcular caja.');}
@@ -63,8 +65,9 @@ export async function recordExpense(client,{date,branch,description,category,met
  return check(await client.rpc('pw_record_expense_v1',{p_request:{request_id:requestId,expense_date:date,branch_id:branch||null,description:String(description),category:String(category),payment_method:method,paid_from_drawer:Boolean(paidFromDrawer),amount:Number(amount)}}),'No se confirmó el gasto.');
 }
 
-export async function transferStock(client,{from_location_id,to_location_id,item_id,quantity},requestId=makeId()){
+export async function transferStock(client,{from_location_id,to_location_id,item_id,quantity,base_unit=''},requestId=makeId()){
  if(from_location_id===to_location_id||!Number.isFinite(Number(quantity))||Number(quantity)<=0)throw Error('Datos de traspaso inválidos.');
+ if(base_unit&&isDiscreteInventoryUnit(base_unit)&&!Number.isInteger(Number(quantity)))throw Error(`El artículo se controla por ${base_unit}; captura una cantidad entera.`);
  return check(await client.rpc('pw_transfer_stock_v1',{p_request:{request_id:requestId,from_location_id,to_location_id,item_id,quantity:Number(quantity)}}),'No se confirmó el traspaso.');
 }
 

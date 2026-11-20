@@ -1,5 +1,16 @@
-export const INVENTORY_UNITS=Object.freeze(['kg','g','l','ml','pieza']);
+// Each item has one atomic base unit; compound units belong in the item name,
+// never in ledger quantities.
+export const INVENTORY_UNITS=Object.freeze(['kg','g','l','ml','porción','pieza','unidad','vaso','jarra']);
+export const DISCRETE_INVENTORY_UNITS=Object.freeze(['porción','pieza','unidad','vaso','jarra']);
 export const INVENTORY_ITEM_TYPES=Object.freeze(['raw_material','packaging','consumable','semi_finished','finished_good']);
+
+export const isDiscreteInventoryUnit=unit=>DISCRETE_INVENTORY_UNITS.includes(String(unit||'').trim().toLowerCase());
+export function validateInventoryQuantity(quantity,unit,{allowNegative=false}={}){
+ const value=Number(quantity);
+ if(!Number.isFinite(value)||value===0||(!allowNegative&&value<0)||Math.round(value*1000)!==value*1000)throw Error('La cantidad debe ser distinta de cero y tener hasta tres decimales.');
+ if(isDiscreteInventoryUnit(unit)&&!Number.isInteger(value))throw Error(`La unidad ${unit} solo admite cantidades enteras.`);
+ return value;
+}
 
 // Templates only: none of these records are inserted until an administrator confirms the form.
 export const INVENTORY_ITEM_TEMPLATES=Object.freeze([
@@ -23,7 +34,7 @@ export function validateInventoryItem(payload){
  const sku=String(payload?.sku||'').trim();
  if(name.length<2||name.length>160)throw Error('El nombre del insumo debe tener entre 2 y 160 caracteres.');
  if(!INVENTORY_ITEM_TYPES.includes(item_type))throw Error('Tipo de insumo no permitido.');
- if(!INVENTORY_UNITS.includes(base_unit))throw Error('Unidad base no permitida. Usa kg, g, l, ml o pieza.');
+ if(!INVENTORY_UNITS.includes(base_unit))throw Error('Unidad base no permitida. Usa kg, g, l, ml, porción, pieza, unidad, vaso o jarra.');
  if(sku.length>80)throw Error('El SKU no puede exceder 80 caracteres.');
  return {name,item_type,base_unit,sku:sku||null};
 }

@@ -1,5 +1,5 @@
-const family={kg:'mass',g:'mass',l:'volume',ml:'volume',pieza:'count'};
-const factor={kg:1,g:0.001,l:1,ml:0.001,pieza:1};
+const family={kg:'mass',g:'mass',l:'volume',ml:'volume',porción:'count',pieza:'count',unidad:'count',vaso:'count',jarra:'count'};
+const factor={kg:1,g:0.001,l:1,ml:0.001,porción:1,pieza:1,unidad:1,vaso:1,jarra:1};
 export function convertToBase(quantity,unit,baseUnit){const q=Number(quantity);if(!Number.isFinite(q)||q<=0||!family[unit]||!family[baseUnit]||family[unit]!==family[baseUnit])throw Error('Unidad incompatible o cantidad inválida.');return q*factor[unit]/factor[baseUnit]}
 export function calculateRecipeCost({lines=[],items=[],costs=[],yieldUnits=1,wastePercent=0,price=null}){
  const yieldValue=Number(yieldUnits),waste=Number(wastePercent);if(!Number.isFinite(yieldValue)||yieldValue<=0||!Number.isFinite(waste)||waste<0||waste>=100)throw Error('Rendimiento o merma inválidos.');

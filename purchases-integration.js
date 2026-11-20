@@ -1,4 +1,5 @@
 /* Purchases use controlled, idempotent RPCs; the browser never writes purchase tables directly. */
+import {isDiscreteInventoryUnit} from './inventory-catalog.js';
 export const PURCHASE_WRITE_ENABLED = true;
 export const PURCHASE_RPC = Object.freeze({
   create:'pw_create_purchase_draft_v1', confirm:'pw_confirm_purchase_v1', receive:'pw_receive_purchase_v1', void:'pw_void_purchase_v1'
@@ -30,6 +31,7 @@ export function buildPurchaseDraft(input, catalog){
     if(!item||seen.has(itemId))throw Error('Cada partida debe usar un insumo activo distinto.');
     if(String(line?.unit||'').trim().toLowerCase()!==String(item.base_unit||'').trim().toLowerCase())throw Error('La unidad debe coincidir con la unidad base del insumo.');
     if(!Number.isFinite(quantity)||quantity<=0||Math.round(quantity*1000)!==quantity*1000)throw Error('La cantidad admite hasta tres decimales y debe ser positiva.');
+    if(isDiscreteInventoryUnit(item.base_unit)&&!Number.isInteger(quantity))throw Error(`El artículo ${item.name} se controla por ${item.base_unit}; captura una cantidad entera.`);
     if(!Number.isFinite(unitCost)||unitCost<0||unitCost>100000000||Math.abs(cents(unitCost)/100-unitCost)>0.000000001)throw Error('El costo unitario admite hasta dos decimales y no puede ser negativo.');
     seen.add(itemId);
     return {item_id:itemId,unit:item.base_unit,quantity,unit_cost:Number((cents(unitCost)/100).toFixed(2)),notes:String(line?.notes||'').trim().slice(0,400),line_number:index+1};
@@ -92,6 +94,7 @@ export function buildPurchaseReceipt(input,document){
     const source=document.lines?.find(row=>row.id===purchaseLineId);
     const quantity=Number(line?.quantity),pending=Number(source?.quantity||0)-Number(source?.receivedQuantity||0);
     if(!source||seen.has(purchaseLineId)||!Number.isFinite(quantity)||quantity<=0||Math.round(quantity*1000)!==quantity*1000||quantity>pending)throw Error('Cada recepción debe contener cantidades pendientes válidas y sin partidas repetidas.');
+    if(isDiscreteInventoryUnit(source.unit)&&!Number.isInteger(quantity))throw Error(`La partida ${source.name||purchaseLineId} se controla por ${source.unit}; recibe una cantidad entera.`);
     seen.add(purchaseLineId);return {purchase_line_id:purchaseLineId,quantity};
   });
   if(!lines.length||lines.length>100)throw Error('Captura entre una y cien partidas recibidas.');
